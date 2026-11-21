@@ -152,3 +152,9 @@ async def test_service_words_are_rewritten(catalog):
     llm = script(turn("question", "В предоставленных данных этого нет."), turn("question", "В нашем прайсе этого нет."))
     r = await Consultant(catalog, llm).answer("c1", "Есть ли у вас бульдозер?")
     assert r.text == "В нашем прайсе этого нет."
+
+
+async def test_full_answer_with_need_manager_flag_is_not_unanswered(catalog):
+    llm = script(turn("question", "В парке JCB, Kubota, автокран и КамАЗ. Что будете делать?", need_manager=True))
+    r = await Consultant(catalog, llm).answer("c1", "Что у вас есть в парке?")
+    assert r.handoff_reason is None and not r.unanswered

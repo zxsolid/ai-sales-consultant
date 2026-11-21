@@ -17,7 +17,11 @@ log = logging.getLogger("consultant")
 
 # Модель иногда ставит маркер и после полного ответа. Верим маркеру, только если в ответе
 # есть «уточню у менеджера» и похожее: иначе менеджер получает лишние уведомления.
-UNSURE = re.compile(r"уточню|уточним|передам|передал|узнаю|менеджер|manager|check", re.IGNORECASE)
+UNSURE = re.compile(
+    r"уточню|уточним|передам|передал|узнаю|менеджер|нет\s+в\s+(нашем\s+)?прайс|в\s+прайсе\s+нет|не\s+указан"
+    r"|нет\s+информац|не\s+могу\s+(сказать|ответить)|manager|check|not\s+(listed|in\s+our)",
+    re.IGNORECASE,
+)
 # Бот спросил «Оформить заявку?», клиент коротко согласился: это тоже старт заявки
 OFFER = re.compile(
     r"(оформ\w*[^.?!]{0,20}заявк\w*|заявк\w*[^.?!]{0,20}оформ\w*)[^.?!]*\?|place[^.?!]{0,15}order[^.?!]*\?",
@@ -498,6 +502,8 @@ class Consultant:
             data = {"intent": "other", "order": {}, "need_manager": True}
             reply = t["fallback"]
         intent = data["intent"]
+        # Модель ставит need_manager и после полного ответа. Верим, только если она пишет «уточню у менеджера»
+        unsure = not failed and data.get("need_manager") is True and bool(UNSURE.search(reply))
 
         reason: str | None = None
         if intent == "manager":
@@ -506,7 +512,7 @@ class Consultant:
             reason = "жалоба"
         elif failed:
             reason = "модель недоступна" if "модель недоступна" in failures else "бот не смог ответить без выдумок"
-        elif data.get("need_manager") is True:
+        elif unsure:
             reason = "бот не нашёл ответа в прайсе"
 
         status: str | None = None
@@ -556,5 +562,5 @@ class Consultant:
             lead_status=status,
             machine_word=str(word).strip() if word and str(word).lower() != "null" else None,
             model_item=str(data["order"].get("item") or "") or None,
-            unanswered=not failed and data.get("need_manager") is True and intent == "question",
+            unanswered=unsure and intent == "question",
         )
