@@ -130,3 +130,13 @@ async def test_openai_compatible_request_format():
     llm = OpenAICompatible("k", "some-model", base_url="https://example.test/v1/")
     assert await llm.complete([{"role": "user", "content": "u"}]) == "Ок"
     assert route.calls[0].request.headers["Authorization"] == "Bearer k"
+
+
+def test_manager_sees_client_as_link():
+    from app.notify import avito_client, handoff_message, telegram_client
+
+    assert telegram_client(42, "Олег <Иванов>", "oleg") == '<a href="https://t.me/oleg">Олег &lt;Иванов&gt;</a> @oleg'
+    assert telegram_client(42, "Олег", None) == '<a href="tg://user?id=42">Олег</a>'
+    assert avito_client("u2i-abc").startswith('<a href="https://www.avito.ru/profile/messenger/channel/u2i-abc">')
+    text = handoff_message("Telegram", telegram_client(42, "Олег", None), "торгуется", "А <b>дешевле</b>?", None)
+    assert "Сообщение: А &lt;b&gt;дешевле&lt;/b&gt;?" in text

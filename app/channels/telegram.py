@@ -16,7 +16,7 @@ from aiogram.types import (
 )
 
 from app.agent import Consultant
-from app.notify import ManagerNotifier, handoff_message
+from app.notify import ManagerNotifier, handoff_message, telegram_client
 
 HELP = (
     "Что я умею:\n"
@@ -90,14 +90,14 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
         avito_id = current_ad.get(message.from_user.id)
         reply = await consultant.answer(str(message.chat.id), message.text, avito_id)
         await message.answer(reply.text)
+        user = message.from_user
+        client = telegram_client(user.id, user.full_name, user.username)
         if reply.lead is not None:
-            await notifier.notify(reply.lead.card(catalog, "Telegram", str(message.chat.id)))
+            await notifier.notify(reply.lead.card(catalog, "Telegram", client))
         elif reply.handoff_reason:
             item = catalog.by_avito_id(avito_id)
             await notifier.notify(
-                handoff_message(
-                    "Telegram", str(message.chat.id), reply.handoff_reason, message.text, item.name if item else None
-                )
+                handoff_message("Telegram", client, reply.handoff_reason, message.text, item.name if item else None)
             )
 
     return router

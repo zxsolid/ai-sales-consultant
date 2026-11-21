@@ -58,9 +58,10 @@ async def test_card_has_everything_and_the_quote(catalog):
     bot = Consultant(catalog, model({"works": "котлован", "address": "Химки", "date": "завтра 8:00", "name": "Анна"}))
     r = await bot.answer("c1", "Беру JCB на 5 смен, телефон +7 916 123-45-67")
     assert r.lead_status == "done"
-    card = r.lead.card(catalog, "Telegram", "42")
+    card = r.lead.card(catalog, "Telegram", '<a href="https://t.me/anna">Анна</a>')
     assert card.splitlines() == [
         "🔥 Новая заявка (Telegram)",
+        'Клиент: <a href="https://t.me/anna">Анна</a>',
         "Техника: Экскаватор-погрузчик JCB 3CX",
         "Расчёт: Экскаватор-погрузчик JCB 3CX, смен подряд: 5, цена смены 22000 ₽, скидка 5%, итого 104500 ₽. "
         "Доставка и переработка в итог не входят.",
@@ -69,7 +70,6 @@ async def test_card_has_everything_and_the_quote(catalog):
         "Когда: завтра 8:00",
         "Имя: Анна",
         "Телефон: +79161234567",
-        "Чат: 42",
     ]
 
 

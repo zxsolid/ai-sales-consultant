@@ -7,6 +7,7 @@
 import json
 import re
 from dataclasses import dataclass, fields
+from html import escape
 
 from app.catalog import Catalog, Item, parse_shifts
 from app.llm import LLM
@@ -54,15 +55,15 @@ class Lead:
         parts = [self.item.name if self.item else None, self.date, self.address]
         return ", ".join(p for p in parts if p)
 
-    def card(self, catalog: Catalog, source: str, chat_id: str) -> str:
-        lines = [f"🔥 Новая заявка ({source})"]
+    def card(self, catalog: Catalog, source: str, client: str) -> str:
+        """Карточка менеджеру в HTML. client: ссылка на профиль клиента или на чат."""
+        lines = [f"🔥 Новая заявка ({source})", f"Клиент: {client}"]
         if self.item:
-            lines.append(f"Техника: {self.item.name}")
+            lines.append(f"Техника: {escape(self.item.name)}")
             if self.shifts:
-                lines.append(catalog.quote(self.item, self.shifts).replace("Итог по прайсу: ", "Расчёт: "))
+                lines.append(escape(catalog.quote(self.item, self.shifts).replace("Итог по прайсу: ", "Расчёт: ")))
         labels = {"works": "Работы", "address": "Адрес", "date": "Когда", "name": "Имя", "phone": "Телефон"}
-        lines += [f"{label}: {getattr(self, f)}" for f, label in labels.items() if getattr(self, f)]
-        lines.append(f"Чат: {chat_id}")
+        lines += [f"{label}: {escape(getattr(self, f))}" for f, label in labels.items() if getattr(self, f)]
         return "\n".join(lines)
 
 

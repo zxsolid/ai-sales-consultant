@@ -12,7 +12,7 @@ import httpx
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 
 from app.agent import Consultant
-from app.notify import ManagerNotifier, handoff_message
+from app.notify import ManagerNotifier, avito_client, handoff_message
 
 log = logging.getLogger("avito")
 
@@ -79,11 +79,11 @@ async def handle_event(
     reply = await consultant.answer(f"avito:{chat_id}", text, item_id)
     await avito.send_message(chat_id, reply.text)
     if reply.lead is not None:
-        await notifier.notify(reply.lead.card(consultant.catalog, "Авито", chat_id))
+        await notifier.notify(reply.lead.card(consultant.catalog, "Авито", avito_client(chat_id)))
     elif reply.handoff_reason:
         item = consultant.catalog.by_avito_id(item_id)
         await notifier.notify(
-            handoff_message("Авито", chat_id, reply.handoff_reason, text, item.name if item else None)
+            handoff_message("Авито", avito_client(chat_id), reply.handoff_reason, text, item.name if item else None)
         )
     return reply.text
 
