@@ -53,7 +53,7 @@ class Catalog:
         total = round(item.price_per_shift * shifts * (100 - pct) / 100)
         discount = f", скидка {pct}%" if pct else ", скидки нет"
         return (
-            f"Расчёт для покупателя: {item.name}, смен подряд: {shifts}, цена смены {item.price_per_shift} ₽"
+            f"Итог по прайсу: {item.name}, смен подряд: {shifts}, цена смены {item.price_per_shift} ₽"
             f"{discount}, итого {total} ₽. Доставка и переработка в итог не входят."
         )
 

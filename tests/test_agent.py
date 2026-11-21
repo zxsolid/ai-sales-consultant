@@ -99,7 +99,7 @@ async def test_bot_gets_ready_quote_instead_of_counting(catalog):
     llm = answers("5 смен JCB со скидкой 5% выйдут 104 500 ₽.")
     reply = await Consultant(catalog, llm).answer("c1", "Нужен JCB на 5 смен подряд, сколько выйдет?")
     system = llm.calls[0][0]["content"]
-    assert "Расчёт для покупателя: Экскаватор-погрузчик JCB 3CX, смен подряд: 5" in system
+    assert "Итог по прайсу: Экскаватор-погрузчик JCB 3CX, смен подряд: 5" in system
     assert "итого 104500 ₽" in system
     assert reply.sources[0] == "quote"
     assert reply.guard_failures == []
@@ -130,3 +130,10 @@ async def test_marker_after_full_answer_is_ignored(catalog):
     assert reply.handoff_reason is None
     assert MODEL_MARKER not in reply.text
     assert HANDOFF_NOTE not in reply.text
+
+
+async def test_handoff_note_is_not_repeated(catalog):
+    llm = answers("Ваш номер передан менеджеру, он свяжется с вами.")
+    reply = await Consultant(catalog, llm).answer("c1", "Мой номер +7 916 123-45-67")
+    assert reply.handoff_reason == "оставил телефон"
+    assert reply.text == "Ваш номер передан менеджеру, он свяжется с вами."
