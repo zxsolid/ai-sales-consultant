@@ -13,6 +13,7 @@ from app.config import Settings
 from app.followup import Followup
 from app.learning import Learner
 from app.notify import LogNotifier, TelegramNotifier
+from app.storage import SqliteStore
 
 
 async def main() -> None:
@@ -22,7 +23,7 @@ async def main() -> None:
         raise SystemExit("Заполните TELEGRAM_BOT_TOKEN в .env")
     bot = Bot(s.telegram_bot_token)
     catalog = load_catalog(learned=DEFAULT_LEARNED)
-    consultant = Consultant(catalog, s.make_llm())
+    consultant = Consultant(catalog, s.make_llm(), store=SqliteStore(s.state_path))
     notifier = (
         TelegramNotifier(bot, s.manager_chat_id) if s.manager_chat_id else LogNotifier(logging.getLogger("manager"))
     )

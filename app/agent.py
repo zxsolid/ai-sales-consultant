@@ -5,12 +5,14 @@ import re
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
+from dataclasses import fields as dataclass_fields
 
 from app import guard, handoff
 from app import lead as leads
 from app.catalog import Catalog, Item, parse_shifts
 from app.knowledge import Knowledge
 from app.llm import LLM, Message
+from app.storage import ChatStore
 from app.texts import TEXTS, lang_of
 
 log = logging.getLogger("consultant")
@@ -192,11 +194,18 @@ class Consultant:
         llm: LLM,
         history_size: int = 8,
         retries: int = 1,
-        clock=time.monotonic,
+        clock=time.time,
         smart: bool = True,
+        store: ChatStore | None = None,
     ):
-        """smart=False: старый режим, где намерение клиента ищут по ключевым словам. Он же запасной."""
+        """smart=False: старый режим, где намерение клиента ищут по ключевым словам. Он же запасной.
+
+        store: где хранить состояние чатов. Без него всё живёт в памяти и пропадает при перезапуске.
+        """
         self.catalog, self.llm = catalog, llm
+        self.store = store
+        self._loaded: set[str] = set()
+        self._paused: dict[str, float] = {}
         self.smart = smart
         self.knowledge = Knowledge(catalog)
         self.retries = retries
@@ -213,9 +222,65 @@ class Consultant:
         self._leads.pop(chat_id, None)
         self._lead_sent.discard(chat_id)
         self._manager_called.pop(chat_id, None)
+        self._paused.pop(chat_id, None)
+        if self.store is not None:
+            self.store.delete(chat_id)
+
+    # ---------- состояние чата: память процесса и диск ----------
+
+    def _restore(self, chat_id: str) -> None:
+        if self.store is None or chat_id in self._loaded:
+            return
+        self._loaded.add(chat_id)
+        data = self.store.load(chat_id)
+        if not data:
+            return
+        self._history[chat_id].extend(data.get("history", []))
+        if data.get("lead"):
+            raw = dict(data["lead"])
+            raw["item"] = self.catalog.by_id(raw.get("item") or "")
+            self._leads[chat_id] = leads.Lead(**raw)
+        if data.get("lead_sent"):
+            self._lead_sent.add(chat_id)
+        if data.get("manager_called"):
+            self._manager_called[chat_id] = data["manager_called"]
+        if data.get("paused_until"):
+            self._paused[chat_id] = data["paused_until"]
+
+    def _persist(self, chat_id: str) -> None:
+        if self.store is None:
+            return
+        lead = self._leads.get(chat_id)
+        lead_data = None
+        if lead is not None:
+            lead_data = {f.name: getattr(lead, f.name) for f in dataclass_fields(lead)}
+            lead_data["item"] = lead.item.id if lead.item else None
+        self.store.save(
+            chat_id,
+            {
+                "history": list(self._history.get(chat_id, [])),
+                "lead": lead_data,
+                "lead_sent": chat_id in self._lead_sent,
+                "manager_called": self._manager_called.get(chat_id),
+                "paused_until": self._paused.get(chat_id),
+            },
+        )
+
+    def pause(self, chat_id: str, seconds: float) -> None:
+        """Менеджер сам пишет клиенту: бот молчит в этом чате, чтобы не отвечать поверх человека."""
+        self._restore(chat_id)
+        self._paused[chat_id] = self.clock() + seconds
+        self._leads.pop(chat_id, None)
+        self._persist(chat_id)
+
+    def is_paused(self, chat_id: str) -> bool:
+        self._restore(chat_id)
+        until = self._paused.get(chat_id)
+        return until is not None and self.clock() < until
 
     def lead_of(self, chat_id: str) -> leads.Lead | None:
         """Незаконченная заявка в чате."""
+        self._restore(chat_id)
         return self._leads.get(chat_id)
 
     def reload(self, catalog: Catalog) -> None:
@@ -230,12 +295,14 @@ class Consultant:
     async def answer(self, chat_id: str, text: str, avito_item_id: int | None = None) -> Reply:
         # Два быстрых сообщения одного клиента обрабатываем по очереди, иначе поля заявки перепутаются
         async with self._locks[chat_id]:
+            self._restore(chat_id)
             reply = await self._dialog(chat_id, text, avito_item_id) if self.smart else None
             if reply is None:  # модель ответила не по формату: работаем по ключевым словам
                 reply = await self._answer(chat_id, text, avito_item_id)
             said = self._user_messages(chat_id) or [text]
             reply.recent = said[-3:]
             reply.interest = list(dict.fromkeys(i.name for m in said for i in self.catalog.items_in(m)))
+            self._persist(chat_id)
             return reply
 
     async def _answer(self, chat_id: str, text: str, avito_item_id: int | None) -> Reply:

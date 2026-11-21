@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     avito_webhook_secret: str = ""
     # Через сколько минут тишины сказать менеджеру, что клиент ушёл без заявки
     followup_minutes: float = 30
+    # Менеджер сам написал клиенту в Авито: столько часов бот в этом чате молчит
+    avito_pause_hours: float = 12
+    # Где хранить историю чатов и начатые заявки
+    state_path: str = "data/state.sqlite"
 
     def make_llm(self) -> LLM:
         if self.llm_provider == "yandex":

@@ -16,6 +16,7 @@ from aiogram.types import (
 )
 
 from app.agent import Consultant
+from app.channels.manager import build_learning_router, send_suggestion
 from app.followup import Followup
 from app.learning import Learner
 from app.notify import ManagerNotifier, manager_message, telegram_client, tell_manager
@@ -56,36 +57,8 @@ def build_router(
     """learner и manager_chat_id: бот предлагает менеджеру выучить новое слово или ответ."""
     router = Router()
     current_ad: dict[int, int | None] = {}
-    waiting_answer: dict[int, str] = {}  # менеджер нажал «Ответить»: ждём от него текст
-
-    async def suggest(message: Message, text: str, reply) -> None:
-        if learner is None or manager_chat_id is None:
-            return
-        s = learner.notice(consultant.catalog, text, reply)
-        if s is None:
-            return
-        if s.kind == "alias":
-            buttons = [("Запомнить", f"learn:yes:{s.id}"), ("Нет", f"learn:no:{s.id}")]
-        else:
-            buttons = [("Ответить", f"learn:answer:{s.id}"), ("Пропустить", f"learn:no:{s.id}")]
-        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=t, callback_data=d) for t, d in buttons]])
-        try:
-            await message.bot.send_message(manager_chat_id, s.text, reply_markup=kb)
-        except Exception:
-            learner.reject(s.id)
-
-    @router.callback_query(F.data.startswith("learn:"))
-    async def learn(call: CallbackQuery) -> None:
-        _, action, sid = call.data.split(":", 2)
-        await call.answer()
-        await call.message.edit_reply_markup(reply_markup=None)
-        if action == "yes":
-            await call.message.answer(learner.accept(sid))
-        elif action == "answer":
-            waiting_answer[call.message.chat.id] = sid
-            await call.message.answer("Напишите ответ одним сообщением. Бот будет отвечать так всем клиентам.")
-        else:
-            await call.message.answer(learner.reject(sid))
+    if learner is not None:
+        router.include_router(build_learning_router(learner))  # раньше общего обработчика: ответ менеджера не вопрос
 
     @router.message(CommandStart())
     async def start(message: Message) -> None:
@@ -132,10 +105,6 @@ def build_router(
 
     @router.message(F.text)
     async def chat(message: Message) -> None:
-        if learner is not None and message.chat.id in waiting_answer:
-            # Менеджер отвечает на «В прайсе нет ответа»: это не вопрос клиента, а урок для бота
-            await message.answer(learner.accept(waiting_answer.pop(message.chat.id), message.text))
-            return
         chat_id = str(message.chat.id)
         avito_id = current_ad.get(message.from_user.id)
         item = consultant.catalog.by_avito_id(avito_id)
@@ -158,6 +127,6 @@ def build_router(
                 manager_notified=bool(reply.handoff_reason or reply.lead),
                 item_name=item.name if item else None,
             )
-        await suggest(message, message.text, reply)
+        await send_suggestion(message.bot, manager_chat_id, learner, consultant.catalog, message.text, reply)
 
     return router
