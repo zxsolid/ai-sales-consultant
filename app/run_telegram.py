@@ -28,8 +28,15 @@ async def main() -> None:
             BotCommand(command="start", description="Начать разговор"),
             BotCommand(command="ad", description="Выбрать объявление, из которого пишете"),
             BotCommand(command="reset", description="Начать диалог заново"),
+            BotCommand(command="help", description="Что умеет бот"),
         ]
     )
+    # Текст, который видно до первого сообщения боту
+    await bot.set_my_description(
+        "Демо ИИ-консультанта для чатов Авито: аренда спецтехники. Отвечает по прайсу, считает сумму "
+        "со скидкой, подбирает технику, не выдумывает цены и зовёт менеджера, когда клиент готов заказать."
+    )
+    await bot.set_my_short_description("ИИ-консультант по аренде спецтехники: цены, расчёт, подбор, менеджер")
     dp = Dispatcher()
     dp.include_router(build_router(consultant, notifier))
     await dp.start_polling(bot)

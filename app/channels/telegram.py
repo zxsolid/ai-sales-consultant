@@ -6,10 +6,38 @@
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    Message,
+    ReplyKeyboardMarkup,
+)
 
 from app.agent import Consultant
 from app.notify import ManagerNotifier, handoff_message
+
+HELP = (
+    "Что я умею:\n"
+    "• называю цены на технику и считаю сумму за несколько смен со скидкой;\n"
+    "• подсказываю, какая машина подойдёт под ваши работы;\n"
+    "• отвечаю про наличие, доставку, оплату, документы и отмену;\n"
+    "• передаю вас менеджеру, когда вы готовы заказать или нужен договор.\n\n"
+    "Цены и условия беру только из прайса компании. Если ответа там нет, не выдумываю, а зову менеджера.\n\n"
+    "Команды: /ad — выбрать объявление, из которого пишете (для демо), /reset — начать заново, /help — эта справка.\n"
+    "Или нажмите на пример вопроса внизу."
+)
+
+EXAMPLES = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Сколько стоит автокран?"), KeyboardButton(text="Нужен JCB на 5 смен, сколько выйдет?")],
+        [KeyboardButton(text="Что взять для септика на узком участке?"), KeyboardButton(text="Бульдозер есть?")],
+        [KeyboardButton(text="Можно без предоплаты?"), KeyboardButton(text="Беру JCB на понедельник")],
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Вопрос про технику, цены или условия",
+)
 
 
 def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
@@ -20,10 +48,14 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
     @router.message(CommandStart())
     async def start(message: Message) -> None:
         await message.answer(
-            f"Здравствуйте! Я консультант компании «{catalog.company['name']}»: аренда спецтехники "
-            "с оператором по Москве и области. Спросите про цены, сроки или условия.\n\n"
-            "Для демо: /ad — выбрать объявление, из которого вы пишете, /reset — начать заново."
+            f"Здравствуйте! Я ИИ-помощник компании «{catalog.company['name']}»: аренда спецтехники "
+            f"с оператором по Москве и области.\n\n{HELP}",
+            reply_markup=EXAMPLES,
         )
+
+    @router.message(Command("help"))
+    async def help_(message: Message) -> None:
+        await message.answer(HELP, reply_markup=EXAMPLES)
 
     @router.message(Command("reset"))
     async def reset(message: Message) -> None:
