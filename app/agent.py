@@ -118,6 +118,8 @@ FIELD_NAMES = {
     "name": "имя",
     "phone": "телефон",
 }
+PERCENT = re.compile(r"\d+\s*%")
+ASKS_DISCOUNT = re.compile(r"скидк|дешевл|подешевле|торг|discount|cheaper", re.IGNORECASE)
 MENTIONS_MANAGER = re.compile(r"менеджер|manager", re.IGNORECASE)
 # Модель уже спросила про нужное поле, пусть и без знака вопроса: свой вопрос не добавляем
 ASKS = {
@@ -426,7 +428,13 @@ class Consultant:
     ) -> tuple[str, list[str]]:
         # Вопрос «а сколько стоит?» без названия машины ищем вместе с прошлым вопросом
         previous = [m["content"] for m in history or [] if m["role"] == "user"]
-        docs = self.knowledge.search(" ".join([*previous[-1:], text]))
+        # «скидку 20%» — это не «КамАЗ 20 т»: проценты в поиск не берём
+        query = PERCENT.sub(" ", " ".join([*previous[-1:], text]))
+        docs = self.knowledge.search(query)
+        if ASKS_DISCOUNT.search(text):
+            discounts = next((p for p in self.catalog.policies if p.id == "discounts"), None)
+            if discounts is not None:
+                docs.insert(0, ("policy:discounts", f"{discounts.title}. {discounts.text}"))
         # Карточки машин, о которых шла речь: «а переработка?» через два сообщения после «кран»
         for talked in {i.id: i for m in [*previous[-3:], text] for i in self.catalog.items_in(m)}.values():
             docs.insert(0, (f"item:{talked.id}", talked.card()))

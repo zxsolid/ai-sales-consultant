@@ -267,3 +267,14 @@ def test_polish_puts_space_before_rouble_sign():
     from app.agent import polish
 
     assert polish("Итого 104 500₽.") == "Итого 104 500 ₽."
+
+
+def test_discount_request_brings_discount_rules_not_a_random_truck():
+    from app.agent import Consultant
+    from app.catalog import load_catalog
+    from app.llm import ScriptedLLM
+
+    c = Consultant(load_catalog(), ScriptedLLM(lambda m: "ок"))
+    context, sources = c.build_context("Сделайте скидку 20%, я у вас уже заказывал", None)
+    assert sources[0] == "policy:discounts"
+    assert "item:kamaz-20" not in sources
