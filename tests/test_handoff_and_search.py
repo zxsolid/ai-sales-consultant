@@ -63,6 +63,8 @@ def test_search_finds_right_document(knowledge, query, doc):
 
 def test_price_list_lists_whole_fleet():
     text = load_catalog().price_list()
-    assert "Автокран Ивановец 25 т: 32000 ₽" in text
-    assert "Каток Bomag 7 т: 19000 ₽ за смену, переработка 2400 ₽ в час (сейчас нет в наличии)" in text
-    assert text.endswith("Другой техники нет.")
+    assert "Автокран Ивановец 25 т: 32 000 ₽ за смену, переработка 4 000 ₽ в час, приезжает своим ходом" in text
+    assert "Экскаватор-погрузчик JCB 3CX: 22 000 ₽ за смену, переработка 2 800 ₽ в час, привозим тралом" in text
+    assert "Каток Bomag 7 т: 19 000 ₽ за смену, переработка 2 400 ₽ в час, привозим тралом, трал оплачивается " in text
+    assert "сейчас нет в наличии: в ремонте до 5 декабря" in text
+    assert text.endswith("Другой техники нет. В цену смены входят оператор и топливо, смена 8 часов.")

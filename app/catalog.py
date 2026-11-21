@@ -18,6 +18,10 @@ def parse_shifts(text: str) -> int | None:
     return None
 
 
+def money(n: int) -> str:
+    return f"{n:,}".replace(",", " ")
+
+
 DEFAULT_CATALOG = Path(__file__).resolve().parent.parent / "data" / "catalog.yaml"
 # Чему бот научился с одобрения менеджера: синонимы техники и ответы на частые вопросы
 DEFAULT_LEARNED = DEFAULT_CATALOG.with_name("learned.yaml")
@@ -36,6 +40,12 @@ class Item:
     good_for: str
     unavailable_note: str = ""
     aliases: tuple[str, ...] = ()
+    delivery: str = ""  # «своим ходом» или «тралом»
+
+    def how_delivered(self) -> str:
+        if self.delivery == "тралом":
+            return "привозим тралом, трал оплачивается отдельно"
+        return f"приезжает {self.delivery}" if self.delivery else ""
 
     def card(self) -> str:
         """Карточка машины одним текстом: её видит модель и по ней сверяются цифры."""
@@ -44,6 +54,8 @@ class Item:
             f"{self.name}. Цена смены {self.price_per_shift} ₽. "
             f"Переработка {self.overtime_per_hour} ₽ в час. "
             f"Минимальный заказ {self.min_shifts} смена. Статус: {status}. "
+            + (f"Доставка: {self.how_delivered()}. " if self.delivery else "")
+            + f"Работает с оператором, топливо входит в цену. "
             f"Характеристики: {self.specs}. Подходит для: {self.good_for}."
         )
 
@@ -98,7 +110,7 @@ class Catalog:
         from app.guard import parse_numbers
 
         problems = []
-        for sentence in re.split(r"(?<=[.!?])\s+", answer):
+        for sentence in re.split(r"(?<=[.!?])\s+|\n", answer):  # строка списка тоже отдельное предложение
             mentioned = self.items_in(sentence)
             if len(mentioned) != 1:
                 continue
@@ -116,11 +128,16 @@ class Catalog:
     def price_list(self) -> str:
         """Короткий прайс: бот всегда знает, что есть в парке, а чего нет."""
         rows = [
-            f"{i.name}: {i.price_per_shift} ₽ за смену, переработка {i.overtime_per_hour} ₽ в час"
-            + ("" if i.available else " (сейчас нет в наличии)")
+            f"{i.name}: {money(i.price_per_shift)} ₽ за смену, переработка {money(i.overtime_per_hour)} ₽ в час"
+            + (f", {i.how_delivered()}" if i.delivery else "")
+            + ("" if i.available else f", сейчас нет в наличии: {i.unavailable_note}")
             for i in self.items
         ]
-        return "Вся техника в парке: " + "; ".join(rows) + ". Другой техники нет."
+        return (
+            "Вся техника в парке: "
+            + "; ".join(rows)
+            + ". Другой техники нет. В цену смены входят оператор и топливо, смена 8 часов."
+        )
 
     def documents(self) -> list[tuple[str, str]]:
         """Все куски знаний: (id, текст). Поиск идёт по ним."""

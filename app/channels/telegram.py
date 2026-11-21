@@ -35,9 +35,12 @@ HELP = (
 
 EXAMPLES = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Сколько стоит автокран?"), KeyboardButton(text="Нужен JCB на 5 смен, сколько выйдет?")],
-        [KeyboardButton(text="Чем выкопать яму под септик в узком дворе?"), KeyboardButton(text="Бульдозер есть?")],
-        [KeyboardButton(text="Можно без предоплаты?"), KeyboardButton(text="Беру JCB на понедельник")],
+        [KeyboardButton(text="Какая техника есть и почём?"), KeyboardButton(text="Сколько выйдет JCB на 5 смен?")],
+        [KeyboardButton(text="Чем выкопать яму под септик в узком дворе?"), KeyboardButton(text="Есть бульдозер?")],
+        [
+            KeyboardButton(text="Оператор и доставка входят в цену?"),
+            KeyboardButton(text="Хочу заказать кран на завтра"),
+        ],
     ],
     resize_keyboard=True,
     input_field_placeholder="Вопрос про технику, цены или условия",

@@ -144,7 +144,7 @@ async def test_machine_from_earlier_message_stays_in_context(catalog):
     await bot.answer("c1", "сколько стоит автокран?")
     await bot.answer("c1", "какие скидки бывают?")
     r = await bot.answer("c1", "хочу взять на 10 смен, переработка по какой ставке?")
-    assert "переработка 4000 ₽ в час" in llm.calls[2][0]["content"]
+    assert "переработка 4 000 ₽ в час" in llm.calls[2][0]["content"]
     assert r.guard_failures == []
 
 
@@ -158,3 +158,10 @@ async def test_full_answer_with_need_manager_flag_is_not_unanswered(catalog):
     llm = script(turn("question", "В парке JCB, Kubota, автокран и КамАЗ. Что будете делать?", need_manager=True))
     r = await Consultant(catalog, llm).answer("c1", "Что у вас есть в парке?")
     assert r.handoff_reason is None and not r.unanswered
+
+
+def test_fleet_list_lines_are_checked_one_by_one(catalog):
+    good = "• Автокран Ивановец 25 т: 32 000 ₽ за смену\n• Самосвал КамАЗ 20 т: 16 000 ₽ за смену"
+    assert catalog.mixed_up_prices(good) == []
+    bad = "• Автокран Ивановец 25 т: 16 000 ₽ за смену\n• Самосвал КамАЗ 20 т: 32 000 ₽ за смену"
+    assert len(catalog.mixed_up_prices(bad)) == 2
