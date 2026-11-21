@@ -10,6 +10,7 @@ from app.agent import Consultant
 from app.catalog import load_catalog
 from app.channels.telegram import build_router
 from app.config import Settings
+from app.followup import Followup
 from app.notify import LogNotifier, TelegramNotifier
 
 
@@ -19,7 +20,8 @@ async def main() -> None:
     if not s.telegram_bot_token:
         raise SystemExit("Заполните TELEGRAM_BOT_TOKEN в .env")
     bot = Bot(s.telegram_bot_token)
-    consultant = Consultant(load_catalog(), s.make_llm())
+    catalog = load_catalog()
+    consultant = Consultant(catalog, s.make_llm())
     notifier = (
         TelegramNotifier(bot, s.manager_chat_id) if s.manager_chat_id else LogNotifier(logging.getLogger("manager"))
     )
@@ -39,8 +41,13 @@ async def main() -> None:
     )
     await bot.set_my_short_description("ИИ-консультант по прайсу: цены, расчёт, подбор техники, заявка менеджеру")
     dp = Dispatcher()
-    dp.include_router(build_router(consultant, notifier))
-    await dp.start_polling(bot)
+    followup = Followup(catalog, notifier, s.followup_minutes)
+    dp.include_router(build_router(consultant, notifier, followup))
+    watcher = asyncio.create_task(followup.run())  # раз в минуту ищет клиентов, которые ушли без заявки
+    try:
+        await dp.start_polling(bot)
+    finally:
+        watcher.cancel()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+import pytest
+
 from app import guard
 
 CONTEXT = (
@@ -75,3 +77,28 @@ def test_booking_promise_is_caught():
 def test_english_thousands_separator():
     assert guard.parse_numbers("5 days cost 152,000 rubles, a shift is 32,000.") == {5.0, 152000.0, 32000.0}
     assert guard.parse_numbers("глубина 2,7 м, ковш 1,5") == {2.7, 1.5}
+
+
+CTX = "Автокран 25 т: 32000 ₽ за смену. КамАЗ 16000 ₽"
+
+
+@pytest.mark.parametrize(
+    ("answer", "question"),
+    [
+        ("Да, дадим скидку 20%", "Сделайте скидку 20%"),
+        ("Да, кран за 10 000 ₽", "Правда, что кран 10 000?"),
+        ("Смена крана 25 тыс. ₽", "почём кран"),
+    ],
+)
+def test_client_cannot_set_price(answer, question):
+    assert not guard.check(answer, CTX, question).ok
+
+
+def test_dates_times_and_phones_are_not_prices():
+    answer = "Подадим 01.12.2026 к 9:00, позвоним на +7 916 123-45-67"
+    assert guard.check(answer, CTX, "01.12.2026 к 9:00, +7 916 123-45-67").ok
+
+
+def test_english_promises_are_caught():
+    assert guard.check("Delivery is free, I guarantee it.", CTX, "x").risky_phrases
+    assert guard.check("Delivery is not free.", CTX, "x").ok

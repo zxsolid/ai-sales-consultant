@@ -15,6 +15,16 @@ NUMBER = re.compile(
     r"\d{1,3}(?:[\s\u00a0\u202f]\d{3})+(?:[.,]\d+)?|\d{1,3}(?:,\d{3})+(?![\d,])(?:\.\d+)?|\d+(?:[.,]\d+)?"
 )
 THOUSANDS_COMMA = re.compile(r"^\d{1,3}(?:,\d{3})+(?:\.\d+)?$")
+# «25 тыс.», «30k» — это 25 000 и 30 000
+THOUSANDS_WORD = re.compile(r"^\s*(тыс\w*\.?|k\b|к\b)", re.IGNORECASE)
+# Даты, время и телефоны не цены: вырезаем до разбора чисел
+NOISE = re.compile(
+    r"\b\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\b"  # 01.12.2026, 5/12
+    r"|\b\d{1,2}:\d{2}\b"  # 9:00
+    r"|(?<![\d+])(?:\+7|8|7)[\s.(-]*\d{3}[\s.)-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}(?!\d)"  # +7 916 123-45-67
+)
+# Число клиента рядом с деньгами: «скидку 20%», «кран за 10 000» — это не данные, а просьба
+MONEY_AFTER = re.compile(r"^\s*(%|₽|руб\w*|р\.|тыс\w*|k\b|rub\w*|percent)", re.IGNORECASE)
 
 # Обещания, которые бот может давать, только если они есть в правилах
 RISKY_PHRASES = (
@@ -25,21 +35,43 @@ RISKY_PHRASES = (
     "в течение часа",
     "забронировал",
     "бронь подтвержд",
+    "free of charge",
+    "is free",
+    "for free",
+    "guarantee",
+    "is booked",
+    "booking is confirmed",
 )
-NEGATION = re.compile(r"\b(не|нельзя|нет|ни)\b[^.!?]{0,12}$")
+NEGATION = re.compile(r"\b(не|нельзя|нет|ни|not|no|cannot|can't|don't|won't)\b[^.!?]{0,12}$", re.IGNORECASE)
 
 
-def parse_numbers(text: str) -> set[float]:
+def _numbers(text: str, skip_money: bool = False) -> set[float]:
+    text = NOISE.sub(" ", text)
     found = set()
-    for raw in NUMBER.findall(text):
-        cleaned = re.sub(r"[\s  ]", "", raw)
+    for m in NUMBER.finditer(text):
+        cleaned = re.sub(r"\s", "", m.group(0))
         cleaned = cleaned.replace(",", "") if THOUSANDS_COMMA.match(cleaned) else cleaned.replace(",", ".")
         cleaned = cleaned.rstrip(".")
         try:
-            found.add(float(cleaned))
+            value = float(cleaned)
         except ValueError:
             continue
+        after = text[m.end() : m.end() + 12]
+        if skip_money and (MONEY_AFTER.match(after) or value >= 1000):
+            continue
+        if THOUSANDS_WORD.match(after):
+            value *= 1000
+        found.add(value)
     return found
+
+
+def parse_numbers(text: str) -> set[float]:
+    return _numbers(text)
+
+
+def client_numbers(text: str) -> set[float]:
+    """Числа из слов клиента, кроме денег: смены, километры, тонны. Цену и скидку клиент не назначает."""
+    return _numbers(text, skip_money=True)
 
 
 @dataclass
@@ -68,7 +100,7 @@ def no_discount(shifts: int) -> int:
 def allowed_numbers(context: str, user_text: str, discount: Callable[[int], int] = no_discount) -> set[float]:
     """Числа, которые можно называть: из данных, из вопроса и суммы по ценам прайса."""
     base = parse_numbers(context)
-    from_user = parse_numbers(user_text)
+    from_user = client_numbers(user_text)
     allowed = base | from_user | {1.0, 2.0}
     # Бот может посчитать сумму: цена из прайса × число смен из вопроса.
     # Если за это число смен положена скидка, верна только сумма со скидкой.

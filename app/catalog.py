@@ -7,10 +7,15 @@ import yaml
 SHIFTS = re.compile(r"\b(\d{1,2})\s*(смен\w*|дн(?:я|ей)|день|сут\w*|shifts?|days?)", re.IGNORECASE)
 
 
+LATER = re.compile(r"(через|спустя|после|in|after)\s*$", re.IGNORECASE)
+
+
 def parse_shifts(text: str) -> int | None:
-    """«на 5 смен», «10 дней» -> 5, 10."""
-    m = SHIFTS.search(text)
-    return int(m.group(1)) if m else None
+    """«на 5 смен», «10 дней» -> 5, 10. «Через 3 дня» — это срок, а не смены."""
+    for m in SHIFTS.finditer(text):
+        if not LATER.search(text[: m.start()]):
+            return int(m.group(1))
+    return None
 
 
 DEFAULT_CATALOG = Path(__file__).resolve().parent.parent / "data" / "catalog.yaml"

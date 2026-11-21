@@ -16,7 +16,8 @@ from aiogram.types import (
 )
 
 from app.agent import Consultant
-from app.notify import ManagerNotifier, handoff_message, telegram_client
+from app.followup import Followup
+from app.notify import ManagerNotifier, manager_message, telegram_client, tell_manager
 
 HELP = (
     "Что я умею:\n"
@@ -42,7 +43,7 @@ EXAMPLES = ReplyKeyboardMarkup(
 )
 
 
-def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
+def build_router(consultant: Consultant, notifier: ManagerNotifier, followup: Followup | None = None) -> Router:
     router = Router()
     current_ad: dict[int, int | None] = {}
     catalog = consultant.catalog
@@ -52,6 +53,8 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
         # Новый разговор: забываем выбранное объявление и историю
         current_ad.pop(message.from_user.id, None)
         consultant.reset(str(message.chat.id))
+        if followup is not None:
+            followup.forget(str(message.chat.id))
         await message.answer(
             f"Здравствуйте! Я ИИ-помощник компании «{catalog.company['name']}»: аренда спецтехники "
             f"с оператором по Москве и области.\n\n{HELP}",
@@ -66,6 +69,8 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
     async def reset(message: Message) -> None:
         consultant.reset(str(message.chat.id))
         current_ad.pop(message.from_user.id, None)
+        if followup is not None:
+            followup.forget(str(message.chat.id))
         await message.answer("Начнём заново. Спросите про технику, цены или условия.")
 
     @router.message(Command("ad"))
@@ -87,17 +92,26 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
 
     @router.message(F.text)
     async def chat(message: Message) -> None:
+        chat_id = str(message.chat.id)
         avito_id = current_ad.get(message.from_user.id)
-        reply = await consultant.answer(str(message.chat.id), message.text, avito_id)
-        await message.answer(reply.text)
+        item = catalog.by_avito_id(avito_id)
+        reply = await consultant.answer(chat_id, message.text, avito_id)
         user = message.from_user
         client = telegram_client(user.id, user.full_name, user.username)
-        if reply.lead is not None:
-            await notifier.notify(reply.lead.card(catalog, "Telegram", client))
-        elif reply.handoff_reason:
-            item = catalog.by_avito_id(avito_id)
-            await notifier.notify(
-                handoff_message("Telegram", client, reply.handoff_reason, message.text, item.name if item else None)
+        # Сначала менеджеру: клиенту уже пообещали «передал», уведомление не должно потеряться
+        await tell_manager(
+            notifier, manager_message(reply, catalog, "Telegram", client, message.text, item.name if item else None)
+        )
+        await message.answer(reply.text)
+        if followup is not None:
+            followup.seen(
+                chat_id,
+                "Telegram",
+                client,
+                message.text,
+                lead=consultant.lead_of(chat_id),
+                manager_notified=bool(reply.handoff_reason or reply.lead),
+                item_name=item.name if item else None,
             )
 
     return router

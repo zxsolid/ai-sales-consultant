@@ -101,8 +101,8 @@ def test_webhook_checks_secret(mock_avito):
     consultant, _ = make()
     app = build_app(AvitoClient("id", "secret", ME), consultant, Notes(), secret="s3cret")
     with TestClient(app) as client:
-        assert client.post("/avito/webhook", json=event()).status_code == 403
-        assert client.post("/avito/webhook?token=s3cret", json=event()).json() == {"ok": True}
+        assert client.post("/avito/webhook/wrong", json=event()).status_code == 403
+        assert client.post("/avito/webhook/s3cret", json=event()).json() == {"ok": True}
     assert mock_avito.routes[1].call_count == 1  # ответ ушёл в фоне
 
 

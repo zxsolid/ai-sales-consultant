@@ -160,10 +160,11 @@
   question: Можно поговорить с менеджером?
   handoff: true
 
-- id: handoff-bargain
-  group: передача менеджеру
+- id: bargain
+  group: торг
   question: А дешевле никак?
-  handoff: true
+  must_include: ['скидк|дешевл|16\s?000']
+  handoff: false
 
 - id: lead-contract
   group: заявка

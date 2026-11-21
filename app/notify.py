@@ -1,7 +1,14 @@
 """Сообщения менеджеру. Пишем в HTML, чтобы клиент в карточке был ссылкой."""
 
+import logging
 from html import escape
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from app.agent import Reply
+    from app.catalog import Catalog
+
+log = logging.getLogger("manager")
 
 
 class ManagerNotifier(Protocol):
@@ -27,6 +34,30 @@ def handoff_message(source: str, client: str, reason: str, question: str, item_n
         lines.append(f"Пишет из объявления: {escape(item_name)}")
     lines.append(f"Сообщение: {escape(question)}")
     return "\n".join(lines)
+
+
+def manager_message(
+    reply: "Reply", catalog: "Catalog", source: str, client: str, text: str, item_name: str | None
+) -> str | None:
+    """Что написать менеджеру после ответа клиенту. None: писать нечего."""
+    if reply.lead is not None:
+        title = (
+            "🔥 Новая заявка" if reply.lead_status == "done" else f"🔥 Клиент ждёт менеджера: {reply.handoff_reason}"
+        )
+        return reply.lead.card(catalog, source, client, title)
+    if reply.handoff_reason:
+        return handoff_message(source, client, reply.handoff_reason, text, item_name)
+    return None
+
+
+async def tell_manager(notifier: ManagerNotifier, message: str | None) -> None:
+    """Если Telegram недоступен, заявка не пропадает: целиком пишем её в лог."""
+    if not message:
+        return
+    try:
+        await notifier.notify(message)
+    except Exception:
+        log.exception("Не удалось написать менеджеру. Сообщение:\n%s", message)
 
 
 class TelegramNotifier:

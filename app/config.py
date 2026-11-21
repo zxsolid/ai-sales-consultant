@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     avito_client_secret: str = ""
     avito_user_id: int | None = None
     avito_webhook_secret: str = ""
+    # Через сколько минут тишины сказать менеджеру, что клиент ушёл без заявки
+    followup_minutes: float = 30
 
     def make_llm(self) -> LLM:
         if self.llm_provider == "yandex":

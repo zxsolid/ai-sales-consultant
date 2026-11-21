@@ -50,7 +50,7 @@ async def test_model_marker_calls_manager(catalog):
     llm = answers(f"Такого вопроса нет в прайсе, уточню у менеджера. {MODEL_MARKER}")
     reply = await Consultant(catalog, llm).answer("c1", "Есть ли у вас скидки для школ?")
     assert MODEL_MARKER not in reply.text
-    assert reply.handoff_reason == "бот не нашёл ответа в данных"
+    assert reply.handoff_reason == "бот не нашёл ответа в прайсе"
     assert reply.text.endswith(HANDOFF_NOTE)
 
 

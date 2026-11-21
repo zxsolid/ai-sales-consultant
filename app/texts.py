@@ -19,6 +19,8 @@ TEXTS = {
         "handoff_note": "Передал вопрос менеджеру, он напишет сюда в рабочее время.",
         "lead_start": "Оформлю заявку.",
         "lead_done": "Передал заявку менеджеру: {summary}. Он позвонит на {phone}, подтвердит время и пришлёт договор.",
+        "lead_done_no_phone": "Передал заявку менеджеру: {summary}. Он напишет вам сюда, подтвердит время "
+        "и пришлёт договор.",
         "lead_cancelled": "Хорошо, заявку отменил. Если будут вопросы, пишите.",
         "bad_phone": "Не разобрал номер. Напишите его так: +7 900 123-45-67.",
         "bad_item": "Такой техники нет. В парке: {items}. Какая подойдёт?",
@@ -36,6 +38,8 @@ TEXTS = {
         "handoff_note": "I passed your question to a manager, he will reply here during working hours.",
         "lead_start": "Let's place your order.",
         "lead_done": "Your order is with the manager: {summary}. He will call {phone}, confirm the time "
+        "and send the contract.",
+        "lead_done_no_phone": "Your order is with the manager: {summary}. He will write to you here, confirm the time "
         "and send the contract.",
         "lead_cancelled": "OK, order cancelled. Write if you have questions.",
         "bad_phone": "I couldn't read the number. Please write it like this: +7 900 123-45-67.",

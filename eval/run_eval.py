@@ -97,6 +97,8 @@ async def main() -> None:
     if len(sys.argv) > 1:
         only = set(sys.argv[1].split(","))
         cases = [c for c in cases if c["id"] in only]
+    if not cases:
+        raise SystemExit("Нет таких вопросов в eval/cases.yaml")
     results = await run(Settings().make_llm(), cases)
     REPORT.write_text(render(results), encoding="utf-8")
     passed = sum(r.passed for r in results)
