@@ -8,7 +8,7 @@ import logging
 from aiogram import Bot
 
 from app.agent import Consultant
-from app.catalog import load_catalog
+from app.catalog import DEFAULT_LEARNED, load_catalog
 from app.channels.avito import AvitoClient, build_app
 from app.config import Settings
 from app.followup import Followup
@@ -28,7 +28,7 @@ notifier = (
     if s.telegram_bot_token and s.manager_chat_id
     else LogNotifier(logging.getLogger("manager"))
 )
-catalog = load_catalog()
+catalog = load_catalog(learned=DEFAULT_LEARNED)  # чему научили менеджеры в Telegram
 app = build_app(
     AvitoClient(s.avito_client_id, s.avito_client_secret, s.avito_user_id),
     Consultant(catalog, s.make_llm()),

@@ -19,6 +19,8 @@ def parse_shifts(text: str) -> int | None:
 
 
 DEFAULT_CATALOG = Path(__file__).resolve().parent.parent / "data" / "catalog.yaml"
+# Чему бот научился с одобрения менеджера: синонимы техники и ответы на частые вопросы
+DEFAULT_LEARNED = DEFAULT_CATALOG.with_name("learned.yaml")
 
 
 @dataclass(frozen=True)
@@ -129,11 +131,26 @@ class Catalog:
         return docs
 
 
-def load_catalog(path: Path = DEFAULT_CATALOG) -> Catalog:
+def load_learned(path: Path | None) -> dict:
+    if path is None or not path.exists():
+        return {"aliases": {}, "faq": []}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return {"aliases": data.get("aliases") or {}, "faq": data.get("faq") or []}
+
+
+def load_catalog(path: Path = DEFAULT_CATALOG, learned: Path | None = None) -> Catalog:
+    """learned: файл с выученным. Без него — только прайс (так работают тесты)."""
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    extra = load_learned(learned)
+    items = []
+    for i in raw["items"]:
+        aliases = [*i.get("aliases", ()), *extra["aliases"].get(i["id"], [])]
+        items.append(Item(**{**i, "aliases": tuple(dict.fromkeys(aliases))}))
+    policies = [Policy(**p) for p in raw["policies"]]
+    policies += [Policy(f"faq-{n}", f["question"], f["answer"]) for n, f in enumerate(extra["faq"], 1)]
     return Catalog(
         company=raw["company"],
-        items=tuple(Item(**{**i, "aliases": tuple(i.get("aliases", ()))}) for i in raw["items"]),
-        policies=tuple(Policy(**p) for p in raw["policies"]),
+        items=tuple(items),
+        policies=tuple(policies),
         discounts=tuple((d["min_shifts"], d["percent"]) for d in raw.get("discounts", [])),
     )

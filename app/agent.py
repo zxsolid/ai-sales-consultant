@@ -74,7 +74,7 @@ DIALOG_PROMPT = """Ты консультант компании «{company}» в
 {context}
 
 Ответь только JSON, без пояснений и разметки:
-{{"intent": "...", "order": {{"item": null, "shifts": null, "works": null, "address": null, "date": null, "name": null}}, "need_manager": false, "reply": "..."}}
+{{"intent": "...", "order": {{"item": null, "shifts": null, "works": null, "address": null, "date": null, "name": null}}, "machine_word": null, "need_manager": false, "reply": "..."}}
 
 intent: что хочет клиент последним сообщением.
 "question": спрашивает про технику, цены, условия.
@@ -85,6 +85,7 @@ intent: что хочет клиент последним сообщением.
 "other": здоровается, благодарит и всё остальное.
 
 order: что клиент сообщил для заявки за весь разговор. item: машина из ДАННЫХ. shifts: число смен или дней аренды. Чего клиент не говорил, ставь null, ничего не придумывай.
+machine_word: как клиент назвал технику в последнем сообщении, слово в слово («миник», «самосвальчик»). Не назвал — null.
 need_manager: true, только если на вопрос клиента нет ответа в ДАННЫХ.
 reply: ответ клиенту."""
 
@@ -158,6 +159,10 @@ class Reply:
     # Для менеджера: о какой технике говорили и последние сообщения клиента
     interest: list[str] = field(default_factory=list)
     recent: list[str] = field(default_factory=list)
+    # Чему можно научиться: как клиент назвал машину и на какой вопрос не нашлось ответа
+    machine_word: str | None = None
+    model_item: str | None = None
+    unanswered: bool = False
 
 
 class Consultant:
@@ -192,6 +197,11 @@ class Consultant:
     def lead_of(self, chat_id: str) -> leads.Lead | None:
         """Незаконченная заявка в чате."""
         return self._leads.get(chat_id)
+
+    def reload(self, catalog: Catalog) -> None:
+        """Менеджер научил бота новому: подхватываем обновлённый прайс без перезапуска."""
+        self.catalog = catalog
+        self.knowledge = Knowledge(catalog)
 
     @classmethod
     def legacy(cls, *args, **kwargs) -> "Consultant":
@@ -534,4 +544,14 @@ class Consultant:
                 reply = with_note(reply, t["handoff_note"])
 
         self._remember(chat_id, text, reply)
-        return Reply(reply, reason, sources, failures, lead_status=status, lead=None)
+        word = data.get("machine_word")
+        return Reply(
+            reply,
+            reason,
+            sources,
+            failures,
+            lead_status=status,
+            machine_word=str(word).strip() if word and str(word).lower() != "null" else None,
+            model_item=str(data["order"].get("item") or "") or None,
+            unanswered=not failed and data.get("need_manager") is True and intent == "question",
+        )
