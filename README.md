@@ -6,7 +6,10 @@
 
 Компания и прайс выдуманы для демо: `data/catalog.yaml`.
 
-![Диалог с ботом в Telegram и уведомление менеджеру](docs/telegram-demo.png)
+<p>
+  <img src="docs/telegram-start.png" alt="Справка и примеры вопросов в Telegram" width="49%">
+  <img src="docs/telegram-demo.png" alt="Диалог с ботом и уведомление менеджеру" width="49%">
+</p>
 
 ## Что делает
 

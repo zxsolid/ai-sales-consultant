@@ -76,7 +76,7 @@ async def test_hot_lead_goes_to_manager(mock_avito):
     await handle_event(event("Беру на понедельник"), AvitoClient("id", "secret", ME), consultant, notes)
     assert len(notes.sent) == 1
     assert "Причина: готов заказать" in notes.sent[0]
-    assert "Объявление: Мини-экскаватор Kubota U27" in notes.sent[0]
+    assert "Пишет из объявления: Мини-экскаватор Kubota U27" in notes.sent[0]
 
 
 async def test_token_is_reused(mock_avito):

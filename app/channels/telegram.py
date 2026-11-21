@@ -47,6 +47,9 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
 
     @router.message(CommandStart())
     async def start(message: Message) -> None:
+        # Новый разговор: забываем выбранное объявление и историю
+        current_ad.pop(message.from_user.id, None)
+        consultant.reset(str(message.chat.id))
         await message.answer(
             f"Здравствуйте! Я ИИ-помощник компании «{catalog.company['name']}»: аренда спецтехники "
             f"с оператором по Москве и области.\n\n{HELP}",

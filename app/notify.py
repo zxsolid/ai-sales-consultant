@@ -8,7 +8,7 @@ class ManagerNotifier(Protocol):
 def handoff_message(source: str, chat_id: str, reason: str, question: str, item_name: str | None) -> str:
     lines = [f"🔥 Клиент ждёт менеджера ({source})", f"Причина: {reason}"]
     if item_name:
-        lines.append(f"Объявление: {item_name}")
+        lines.append(f"Пишет из объявления: {item_name}")
     lines += [f"Чат: {chat_id}", f"Сообщение: {question}"]
     return "\n".join(lines)
 
