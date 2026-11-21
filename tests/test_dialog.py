@@ -165,3 +165,26 @@ def test_fleet_list_lines_are_checked_one_by_one(catalog):
     assert catalog.mixed_up_prices(good) == []
     bad = "• Автокран Ивановец 25 т: 16 000 ₽ за смену\n• Самосвал КамАЗ 20 т: 32 000 ₽ за смену"
     assert len(catalog.mixed_up_prices(bad)) == 2
+
+
+async def test_quote_is_for_machine_client_asks_about_not_the_ad(catalog):
+    llm = script(turn("question", "КамАЗ на 5 смен: 76 000 ₽."))
+    bot = Consultant(catalog, llm)
+    await bot.answer("c1", "Камаз 20 тонн на 5 смен цена?", avito_item_id=4012345601)  # объявление JCB
+    assert "Самосвал КамАЗ 20 т, смен подряд: 5" in llm.calls[0][0]["content"]
+
+
+async def test_follow_up_shifts_use_machine_from_previous_message(catalog):
+    llm = script(turn("question", "Смена КамАЗа 16 000 ₽."), turn("question", "5 смен: 76 000 ₽."))
+    bot = Consultant(catalog, llm)
+    await bot.answer("c1", "почём камаз?")
+    r = await bot.answer("c1", "а на 5 смен?")
+    assert "Самосвал КамАЗ 20 т, смен подряд: 5" in llm.calls[1][0]["content"]
+    assert r.guard_failures == []
+
+
+def test_polish_fixes_dashes_and_thousands():
+    from app.agent import polish
+
+    assert polish("Цена КамАЗа — 16000 ₽, итого 76000 ₽.") == "Цена КамАЗа: 16 000 ₽, итого 76 000 ₽."
+    assert polish("глубина 2,7 м, вес 2700 кг") == "глубина 2,7 м, вес 2700 кг"

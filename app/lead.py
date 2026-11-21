@@ -108,7 +108,14 @@ class Lead:
             if not self.item.available:
                 lines.append(escape(f"⚠️ Сейчас нет в наличии: {self.item.unavailable_note}".rstrip(": ")))
             if self.shifts:
-                lines.append(escape(catalog.quote(self.item, self.shifts).replace("Итог по прайсу: ", "Расчёт: ")))
+                pct = catalog.discount_percent(self.shifts)
+                total = round(self.item.price_per_shift * self.shifts * (100 - pct) / 100)
+                money = lambda n: f"{n:,}".replace(",", " ")  # noqa: E731
+                discount = f", скидка {pct}%" if pct else ""
+                lines.append(
+                    f"Расчёт: {self.shifts} смен по {money(self.item.price_per_shift)} ₽{discount}, "
+                    f"итого {money(total)} ₽. Доставка и переработка отдельно."
+                )
         labels = {"works": "Работы", "address": "Адрес", "date": "Когда", "name": "Имя", "phone": "Телефон"}
         lines += [f"{label}: {escape(getattr(self, f))}" for f, label in labels.items() if getattr(self, f)]
         if not self.phone:

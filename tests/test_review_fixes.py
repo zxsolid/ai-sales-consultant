@@ -231,5 +231,5 @@ async def test_mixed_up_price_is_rewritten(catalog):
     answers = iter(["Переработка автокрана стоит 2400 ₽ в час.", "Переработка автокрана стоит 4000 ₽ в час."])
     bot = Consultant.legacy(catalog, model(answer=lambda: next(answers)))
     r = await bot.answer("c1", "Сколько стоит переработка автокрана?")
-    assert r.text.startswith("Переработка автокрана стоит 4000 ₽")
+    assert r.text.startswith("Переработка автокрана стоит 4 000 ₽")
     assert "другой машины" in r.guard_failures[0]
