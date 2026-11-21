@@ -10,7 +10,11 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 # 22 000, 22000, 4 500, 1,5, 5%
-NUMBER = re.compile(r"\d{1,3}(?:[\s\u00a0\u202f]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?")
+# Тысячи разделяют пробелом (104 500) или, в английских ответах, запятой (104,500)
+NUMBER = re.compile(
+    r"\d{1,3}(?:[\s\u00a0\u202f]\d{3})+(?:[.,]\d+)?|\d{1,3}(?:,\d{3})+(?![\d,])(?:\.\d+)?|\d+(?:[.,]\d+)?"
+)
+THOUSANDS_COMMA = re.compile(r"^\d{1,3}(?:,\d{3})+(?:\.\d+)?$")
 
 # Обещания, которые бот может давать, только если они есть в правилах
 RISKY_PHRASES = (
@@ -28,7 +32,9 @@ NEGATION = re.compile(r"\b(не|нельзя|нет|ни)\b[^.!?]{0,12}$")
 def parse_numbers(text: str) -> set[float]:
     found = set()
     for raw in NUMBER.findall(text):
-        cleaned = re.sub(r"[\s  ]", "", raw).replace(",", ".").rstrip(".")
+        cleaned = re.sub(r"[\s  ]", "", raw)
+        cleaned = cleaned.replace(",", "") if THOUSANDS_COMMA.match(cleaned) else cleaned.replace(",", ".")
+        cleaned = cleaned.rstrip(".")
         try:
             found.add(float(cleaned))
         except ValueError:

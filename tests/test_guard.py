@@ -70,3 +70,8 @@ def test_promise_from_rules_is_fine():
 def test_booking_promise_is_caught():
     result = guard.check("Готово, забронировал на понедельник.", CONTEXT, "беру на понедельник")
     assert result.risky_phrases == ["забронировал"]
+
+
+def test_english_thousands_separator():
+    assert guard.parse_numbers("5 days cost 152,000 rubles, a shift is 32,000.") == {5.0, 152000.0, 32000.0}
+    assert guard.parse_numbers("глубина 2,7 м, ковш 1,5") == {2.7, 1.5}
