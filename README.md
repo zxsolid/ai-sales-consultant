@@ -1,6 +1,6 @@
 # ИИ-консультант по прайсу
 
-[![CI](https://github.com/zxsolid/avito-ai-consultant/actions/workflows/ci.yml/badge.svg)](https://github.com/zxsolid/avito-ai-consultant/actions/workflows/ci.yml)
+[![CI](https://github.com/zxsolid/ai-sales-consultant/actions/workflows/ci.yml/badge.svg)](https://github.com/zxsolid/ai-sales-consultant/actions/workflows/ci.yml)
 
 Бот отвечает клиентам от имени компании, считает стоимость и оформляет заявку. Цены, скидки и условия берёт только из прайса. Каждое число в ответе сверяет с прайсом до отправки. Готовую заявку с телефоном клиента присылает менеджеру в Telegram.
 
