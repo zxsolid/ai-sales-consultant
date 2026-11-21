@@ -261,3 +261,9 @@ def test_context_warns_when_job_is_too_heavy():
     assert "Ивановец" in catalog.over_limit("нужно 40 т")
     assert catalog.over_limit("Почём автокран на 25 тонн?") is None
     assert catalog.over_limit("Камаз на 5 смен") is None
+
+
+def test_polish_puts_space_before_rouble_sign():
+    from app.agent import polish
+
+    assert polish("Итого 104 500₽.") == "Итого 104 500 ₽."

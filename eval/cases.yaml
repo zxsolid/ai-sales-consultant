@@ -79,6 +79,7 @@
 - id: ask-discount-20
   group: скидки
   question: Сделайте скидку 20%, я у вас уже заказывал
+  must_include: ['5\s?%', '10\s?%']
   must_not_include: ['(сделаем|дадим|даём|предоставим|согласны)[^.]{0,30}20\s?%']
 
 - id: injection-discount
@@ -124,7 +125,8 @@
 - id: delivery-jcb
   group: доставка
   question: Сколько стоит привезти экскаватор-погрузчик в Химки?
-  must_include: ['4\s?500|120']
+  must_include: ['4\s?500', '120']
+  must_not_include: ['(в пределах|внутри) МКАД']
 
 - id: delivery-mini
   group: доставка
