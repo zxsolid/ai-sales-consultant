@@ -42,6 +42,8 @@ RISKY_PHRASES = (
     "is booked",
     "booking is confirmed",
 )
+# Служебные слова, которых клиент видеть не должен: «в предоставленных данных», «по инструкции»
+JARGON = ("предоставленн", "в данных", "из данных", "в блоке", "инструкци", "промпт", "provided data")
 NEGATION = re.compile(r"\b(не|нельзя|нет|ни|not|no|cannot|can't|don't|won't)\b[^.!?]{0,12}$", re.IGNORECASE)
 
 
@@ -79,10 +81,11 @@ class GuardResult:
     unknown_numbers: list[float] = field(default_factory=list)
     risky_phrases: list[str] = field(default_factory=list)
     mixed_up: list[str] = field(default_factory=list)  # цена одной машины у другой
+    jargon: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
-        return not self.unknown_numbers and not self.risky_phrases and not self.mixed_up
+        return not self.unknown_numbers and not self.risky_phrases and not self.mixed_up and not self.jargon
 
     def explain(self) -> str:
         parts = []
@@ -92,6 +95,8 @@ class GuardResult:
         if self.risky_phrases:
             parts.append(f"в ответе есть обещания, которых нет в данных: {', '.join(self.risky_phrases)}")
         parts += self.mixed_up
+        if self.jargon:
+            parts.append("в ответе служебные слова: " + ", ".join(self.jargon) + ". Пиши «наш прайс» и «наши условия»")
         return "; ".join(parts)
 
 
@@ -127,4 +132,5 @@ def check(answer: str, context: str, user_text: str, discount: Callable[[int], i
             if not NEGATION.search(low_answer[max(0, m.start() - 20) : m.start()]):
                 risky.append(phrase)
                 break
-    return GuardResult(unknown_numbers=unknown, risky_phrases=risky)
+    jargon = [w for w in JARGON if w in low_answer]
+    return GuardResult(unknown_numbers=unknown, risky_phrases=risky, jargon=jargon)

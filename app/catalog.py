@@ -114,7 +114,8 @@ class Catalog:
     def price_list(self) -> str:
         """Короткий прайс: бот всегда знает, что есть в парке, а чего нет."""
         rows = [
-            f"{i.name}: {i.price_per_shift} ₽ за смену" + ("" if i.available else " (сейчас нет в наличии)")
+            f"{i.name}: {i.price_per_shift} ₽ за смену, переработка {i.overtime_per_hour} ₽ в час"
+            + ("" if i.available else " (сейчас нет в наличии)")
             for i in self.items
         ]
         return "Вся техника в парке: " + "; ".join(rows) + ". Другой техники нет."

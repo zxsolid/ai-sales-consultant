@@ -318,6 +318,9 @@ class Consultant:
         # Вопрос «а сколько стоит?» без названия машины ищем вместе с прошлым вопросом
         previous = [m["content"] for m in history or [] if m["role"] == "user"]
         docs = self.knowledge.search(" ".join([*previous[-1:], text]))
+        # Карточки машин, о которых шла речь: «а переработка?» через два сообщения после «кран»
+        for talked in {i.id: i for m in [*previous[-3:], text] for i in self.catalog.items_in(m)}.values():
+            docs.insert(0, (f"item:{talked.id}", talked.card()))
         if item is not None:
             docs.insert(0, (f"item:{item.id}", "Покупатель пишет из объявления: " + item.card()))
         # «А с доставкой?» после «JCB на 5 смен» — считаем те же 5 смен

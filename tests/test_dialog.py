@@ -128,3 +128,21 @@ async def test_shifts_from_words_win_over_model(catalog):
     bot = Consultant(catalog, llm)
     await bot.answer("c1", "давайте кран на 3 смены")
     assert bot.lead_of("c1").shifts == 3
+
+
+async def test_machine_from_earlier_message_stays_in_context(catalog):
+    llm = script(
+        turn("question", "Смена 32 000 ₽."), turn("question", "Скидка 10%."), turn("question", "4000 ₽ в час.")
+    )
+    bot = Consultant(catalog, llm)
+    await bot.answer("c1", "сколько стоит автокран?")
+    await bot.answer("c1", "какие скидки бывают?")
+    r = await bot.answer("c1", "хочу взять на 10 смен, переработка по какой ставке?")
+    assert "переработка 4000 ₽ в час" in llm.calls[2][0]["content"]
+    assert r.guard_failures == []
+
+
+async def test_service_words_are_rewritten(catalog):
+    llm = script(turn("question", "В предоставленных данных этого нет."), turn("question", "В нашем прайсе этого нет."))
+    r = await Consultant(catalog, llm).answer("c1", "Есть ли у вас бульдозер?")
+    assert r.text == "В нашем прайсе этого нет."
