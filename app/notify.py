@@ -27,12 +27,25 @@ def avito_client(chat_id: str) -> str:
     return f'<a href="https://www.avito.ru/profile/messenger/channel/{escape(chat_id)}">чат в Авито</a>'
 
 
-def handoff_message(source: str, client: str, reason: str, question: str, item_name: str | None) -> str:
-    """client уже готовый HTML: ссылка на профиль или чат."""
+def conversation(recent: list[str]) -> str:
+    return "Переписка: " + escape(" → ".join(f"«{m[:200]}»" for m in recent))
+
+
+def handoff_message(
+    source: str,
+    client: str,
+    reason: str,
+    recent: list[str],
+    item_name: str | None = None,
+    interest: list[str] | None = None,
+) -> str:
+    """Что хочет клиент: о какой технике речь и что он писал. client уже готовый HTML."""
     lines = [f"🔥 Клиент ждёт менеджера ({source})", f"Клиент: {client}", f"Причина: {escape(reason)}"]
     if item_name:
         lines.append(f"Пишет из объявления: {escape(item_name)}")
-    lines.append(f"Сообщение: {escape(question)}")
+    if interest:
+        lines.append("Интересуется: " + escape(", ".join(interest)))
+    lines.append(conversation(recent))
     return "\n".join(lines)
 
 
@@ -44,9 +57,10 @@ def manager_message(
         title = (
             "🔥 Новая заявка" if reply.lead_status == "done" else f"🔥 Клиент ждёт менеджера: {reply.handoff_reason}"
         )
-        return reply.lead.card(catalog, source, client, title)
+        card = reply.lead.card(catalog, source, client, title)
+        return card if reply.lead_status == "done" else card + "\n" + conversation(reply.recent or [text])
     if reply.handoff_reason:
-        return handoff_message(source, client, reply.handoff_reason, text, item_name)
+        return handoff_message(source, client, reply.handoff_reason, reply.recent or [text], item_name, reply.interest)
     return None
 
 

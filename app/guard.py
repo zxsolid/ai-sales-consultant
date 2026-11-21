@@ -78,10 +78,11 @@ def client_numbers(text: str) -> set[float]:
 class GuardResult:
     unknown_numbers: list[float] = field(default_factory=list)
     risky_phrases: list[str] = field(default_factory=list)
+    mixed_up: list[str] = field(default_factory=list)  # цена одной машины у другой
 
     @property
     def ok(self) -> bool:
-        return not self.unknown_numbers and not self.risky_phrases
+        return not self.unknown_numbers and not self.risky_phrases and not self.mixed_up
 
     def explain(self) -> str:
         parts = []
@@ -90,6 +91,7 @@ class GuardResult:
             parts.append(f"в ответе есть числа, которых нет в данных: {nums}")
         if self.risky_phrases:
             parts.append(f"в ответе есть обещания, которых нет в данных: {', '.join(self.risky_phrases)}")
+        parts += self.mixed_up
         return "; ".join(parts)
 
 

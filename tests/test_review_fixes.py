@@ -137,7 +137,7 @@ async def test_lead_goes_without_phone_after_two_tries(catalog):
     await bot.answer("c1", "позвоните в телеграм")
     r = await bot.answer("c1", "пишите сюда")
     assert r.lead_status == "done"
-    assert "Он напишет вам сюда" in r.text
+    assert "Менеджер напишет вам сюда" in r.text
     assert "Телефон: клиент не оставил, пишите в чат" in r.lead.card(catalog, "Telegram", "x")
 
 
@@ -207,3 +207,27 @@ async def test_same_chat_messages_are_processed_in_order(catalog):
     await asyncio.gather(bot.answer("c1", "Выкопать траншею под кабель"), bot.answer("c1", "Мытищи, Мира 5"))
     lead = bot.lead_of("c1")
     assert lead.works == "Выкопать траншею под кабель" and lead.address == "Мытищи, Мира 5"
+
+
+@pytest.mark.parametrize("text", ["давай оформим на 10 дней", "Оформите на завтра", "Закажу кран"])
+async def test_more_ways_to_say_order(catalog, text):
+    bot = Consultant(catalog, model(answer="Кран 32 000 ₽. Оформить заявку?"))
+    await bot.answer("c1", "Сколько стоит автокран?")
+    r = await bot.answer("c1", text)
+    assert r.lead_status == "collecting"
+    assert bot.lead_of("c1").item.id == "crane-25"
+
+
+def test_price_of_another_machine_is_caught(catalog):
+    assert catalog.mixed_up_prices("Переработка автокрана Ивановец стоит 2400 рублей в час.")
+    assert catalog.mixed_up_prices("Смена крана 16 000 ₽.")
+    assert not catalog.mixed_up_prices("Переработка автокрана 4000 ₽ в час.")
+    assert not catalog.mixed_up_prices("Кран 32 000 ₽, а КамАЗ 16 000 ₽.")
+
+
+async def test_mixed_up_price_is_rewritten(catalog):
+    answers = iter(["Переработка автокрана стоит 2400 ₽ в час.", "Переработка автокрана стоит 4000 ₽ в час."])
+    bot = Consultant(catalog, model(answer=lambda: next(answers)))
+    r = await bot.answer("c1", "Сколько стоит переработка автокрана?")
+    assert r.text.startswith("Переработка автокрана стоит 4000 ₽")
+    assert "другой машины" in r.guard_failures[0]

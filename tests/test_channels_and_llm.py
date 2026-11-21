@@ -82,7 +82,7 @@ async def test_manager_gets_lead_card_when_order_is_complete(mock_avito):
     assert first == "Оформлю заявку. Оставьте телефон: менеджер позвонит и подтвердит заказ."
     assert notes.sent == []
     done = await handle_event(event("+7 916 123-45-67"), avito, consultant, notes)
-    assert done.startswith("Передал заявку менеджеру: Мини-экскаватор Kubota U27")
+    assert done.startswith("Передал заявку менеджеру.\nМини-экскаватор Kubota U27: 18 000 ₽ за смену.")
     card = notes.sent[0]
     assert card.startswith("🔥 Новая заявка (Авито)")
     assert "Техника: Мини-экскаватор Kubota U27" in card
@@ -138,5 +138,8 @@ def test_manager_sees_client_as_link():
     assert telegram_client(42, "Олег <Иванов>", "oleg") == '<a href="https://t.me/oleg">Олег &lt;Иванов&gt;</a> @oleg'
     assert telegram_client(42, "Олег", None) == '<a href="tg://user?id=42">Олег</a>'
     assert avito_client("u2i-abc").startswith('<a href="https://www.avito.ru/profile/messenger/channel/u2i-abc">')
-    text = handoff_message("Telegram", telegram_client(42, "Олег", None), "торгуется", "А <b>дешевле</b>?", None)
-    assert "Сообщение: А &lt;b&gt;дешевле&lt;/b&gt;?" in text
+    text = handoff_message(
+        "Telegram", telegram_client(42, "Олег", None), "жалоба", ["Почём кран?", "А <b>дешевле</b>?"], None, ["Кран"]
+    )
+    assert "Интересуется: Кран" in text
+    assert "Переписка: «Почём кран?» → «А &lt;b&gt;дешевле&lt;/b&gt;?»" in text

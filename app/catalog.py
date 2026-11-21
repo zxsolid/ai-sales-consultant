@@ -86,6 +86,28 @@ class Catalog:
                     best = (len(alias), item)
         return best[1] if best else None
 
+    def items_in(self, text: str) -> list[Item]:
+        """Все машины, которые упомянуты в тексте."""
+        low = text.lower().replace("ё", "е")
+        return [i for i in self.items if any(a.lower() in low for a in (*i.aliases, i.name.lower()))]
+
+    def mixed_up_prices(self, answer: str) -> list[str]:
+        """Цена чужой машины в предложении про одну машину: «переработка крана 2400 ₽» (2400 — у катка)."""
+        from app.guard import parse_numbers
+
+        problems = []
+        for sentence in re.split(r"(?<=[.!?])\s+", answer):
+            mentioned = self.items_in(sentence)
+            if len(mentioned) != 1:
+                continue
+            own = {float(mentioned[0].price_per_shift), float(mentioned[0].overtime_per_hour)}
+            others = {
+                float(n) for i in self.items if i is not mentioned[0] for n in (i.price_per_shift, i.overtime_per_hour)
+            }
+            for n in sorted(parse_numbers(sentence) & (others - own)):
+                problems.append(f"{n:g} ₽ — это цена другой машины, у «{mentioned[0].name}» другие цены")
+        return problems
+
     def by_id(self, item_id: str) -> Item | None:
         return next((i for i in self.items if i.id == item_id), None)
 

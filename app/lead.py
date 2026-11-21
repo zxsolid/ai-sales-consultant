@@ -80,6 +80,26 @@ class Lead:
         parts = [self.item.name if self.item else None, self.date, self.address]
         return ", ".join(p for p in parts if p)
 
+    def details(self, catalog: Catalog) -> str:
+        """Заявка для клиента: техника с суммой и всё, что он сообщил."""
+        lb = TEXTS[self.lang]["labels"]
+        money = lambda n: f"{n:,}".replace(",", " ")  # noqa: E731
+        lines = []
+        if self.item:
+            price = self.item.price_per_shift
+            if self.shifts:
+                pct = catalog.discount_percent(self.shifts)
+                total = round(price * self.shifts * (100 - pct) / 100)
+                deal = f"{self.item.name}, {self.shifts} {lb['shifts']}: {money(total)} ₽"
+                deal += f" {lb['discount'].format(pct=pct)}" if pct else ""
+            else:
+                deal = f"{self.item.name}: {lb['per_shift'].format(price=money(price))}"
+            lines += [deal + ". " + lb["extra"]]
+        lines += [
+            f"{lb[f]}: {getattr(self, f)}" for f in ("works", "address", "date", "name", "phone") if getattr(self, f)
+        ]
+        return "\n".join(lines)
+
     def card(self, catalog: Catalog, source: str, client: str, title: str = "🔥 Новая заявка") -> str:
         """Карточка менеджеру в HTML. client: ссылка на профиль клиента или на чат."""
         lines = [f"{escape(title)} ({source})", f"Клиент: {client}"]

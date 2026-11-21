@@ -48,10 +48,17 @@ async def test_bot_asks_only_what_is_missing(catalog):
     r = await bot.answer("c1", "+7 916 123-45-67")
     assert r.lead_status == "done"
     assert r.handoff_reason == "новая заявка"
-    assert r.text == (
-        "Передал заявку менеджеру: Экскаватор-погрузчик JCB 3CX, понедельник, Мытищи, Мира 5. "
-        "Он позвонит на +79161234567, подтвердит время и пришлёт договор."
-    )
+    assert r.text.splitlines() == [
+        "Передал заявку менеджеру.",
+        "Экскаватор-погрузчик JCB 3CX: 22 000 ₽ за смену. Доставка и переработка считаются отдельно.",
+        "Работы: Выкопать траншею",
+        "Адрес: Мытищи, Мира 5",
+        "Когда: понедельник",
+        "Имя: Олег",
+        "Телефон: +79161234567",
+        "",
+        "Менеджер позвонит, подтвердит время и пришлёт договор.",
+    ]
 
 
 async def test_card_has_everything_and_the_quote(catalog):
@@ -129,7 +136,7 @@ async def test_lead_in_english(catalog):
         r.text == "Let's place your order. Please leave your phone number: a manager will call and confirm the order."
     )
     r = await bot.answer("c1", "+7 916 123-45-67")
-    assert r.text.startswith("Your order is with the manager: Автокран Ивановец 25 т, Monday 9am, Khimki.")
+    assert r.text.startswith("Your order is with the manager.\nАвтокран Ивановец 25 т, 2 shifts: 64 000 ₽.")
     assert r.lead.shifts == 2
 
 
