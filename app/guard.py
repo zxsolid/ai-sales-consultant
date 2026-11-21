@@ -6,6 +6,7 @@
 """
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 # 22 000, 22000, 4 500, 1,5, 5%
@@ -54,24 +55,27 @@ class GuardResult:
         return "; ".join(parts)
 
 
-def allowed_numbers(context: str, user_text: str) -> set[float]:
+def no_discount(shifts: int) -> int:
+    return 0
+
+
+def allowed_numbers(context: str, user_text: str, discount: Callable[[int], int] = no_discount) -> set[float]:
     """Числа, которые можно называть: из данных, из вопроса и суммы по ценам прайса."""
     base = parse_numbers(context)
     from_user = parse_numbers(user_text)
     allowed = base | from_user | {1.0, 2.0}
-    # Бот может посчитать сумму: цена из прайса × число смен или часов из вопроса,
-    # в том числе со скидкой 5% или 10% из правил
+    # Бот может посчитать сумму: цена из прайса × число смен из вопроса.
+    # Если за это число смен положена скидка, верна только сумма со скидкой.
     prices = {n for n in base if n >= 1000}
-    counts = {n for n in from_user if 1 <= n <= 60 and n == int(n)}
+    counts = {int(n) for n in from_user if 1 <= n <= 60 and n == int(n)}
     for p in prices:
         for c in counts:
-            for k in (1, 0.95, 0.9):
-                allowed.add(round(p * c * k, 2))
+            allowed.add(round(p * c * (100 - discount(c)) / 100))
     return allowed
 
 
-def check(answer: str, context: str, user_text: str) -> GuardResult:
-    allowed = allowed_numbers(context, user_text)
+def check(answer: str, context: str, user_text: str, discount: Callable[[int], int] = no_discount) -> GuardResult:
+    allowed = allowed_numbers(context, user_text, discount)
     unknown = sorted(n for n in parse_numbers(answer) if n not in allowed)
     low_answer, low_context = answer.lower(), context.lower()
     risky = []

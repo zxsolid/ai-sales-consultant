@@ -22,9 +22,23 @@ def test_invented_discount_is_caught():
     assert result.unknown_numbers == [15.0]
 
 
-def test_total_from_catalog_price_and_user_count_passes():
+def discount(shifts: int) -> int:
+    return 10 if shifts >= 10 else 5 if shifts >= 5 else 0
+
+
+def test_total_without_discount_passes():
+    assert guard.check("3 смены выйдут 54 000 ₽.", CONTEXT, "нужен на 3 смены", discount).ok
+
+
+def test_total_with_discount_passes():
     answer = "5 смен по 18 000 ₽ со скидкой 5% выйдет 85 500 ₽."
-    assert guard.check(answer, CONTEXT, "нужен на 5 смен").ok
+    assert guard.check(answer, CONTEXT, "нужен на 5 смен", discount).ok
+
+
+def test_total_that_forgot_discount_is_caught():
+    # Реальная ошибка YandexGPT на прогоне: «110 000 ₽ с учётом скидки 5%» за 5 смен по 22 000 ₽
+    result = guard.check("5 смен выйдет 90 000 ₽ с учётом скидки 5%.", CONTEXT, "нужен на 5 смен", discount)
+    assert result.unknown_numbers == [90000.0]
 
 
 def test_total_with_wrong_math_is_caught():

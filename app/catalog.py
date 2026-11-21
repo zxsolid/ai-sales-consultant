@@ -42,6 +42,20 @@ class Catalog:
     company: dict
     items: tuple[Item, ...]
     policies: tuple[Policy, ...]
+    discounts: tuple[tuple[int, int], ...] = ()  # (от скольких смен, процент)
+
+    def discount_percent(self, shifts: int) -> int:
+        return max((pct for min_shifts, pct in self.discounts if shifts >= min_shifts), default=0)
+
+    def quote(self, item: Item, shifts: int) -> str:
+        """Готовый расчёт: модель называет итог отсюда, а не считает сама."""
+        pct = self.discount_percent(shifts)
+        total = round(item.price_per_shift * shifts * (100 - pct) / 100)
+        discount = f", скидка {pct}%" if pct else ", скидки нет"
+        return (
+            f"Расчёт для покупателя: {item.name}, смен подряд: {shifts}, цена смены {item.price_per_shift} ₽"
+            f"{discount}, итого {total} ₽. Доставка и переработка в итог не входят."
+        )
 
     def by_avito_id(self, avito_item_id: int | None) -> Item | None:
         return next((i for i in self.items if i.avito_item_id == avito_item_id), None)
@@ -72,4 +86,5 @@ def load_catalog(path: Path = DEFAULT_CATALOG) -> Catalog:
         company=raw["company"],
         items=tuple(Item(**i) for i in raw["items"]),
         policies=tuple(Policy(**p) for p in raw["policies"]),
+        discounts=tuple((d["min_shifts"], d["percent"]) for d in raw.get("discounts", [])),
     )

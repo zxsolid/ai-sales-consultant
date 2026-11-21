@@ -4,6 +4,13 @@ company:
   region: Москва и Московская область
   hours: ежедневно с 8:00 до 20:00
 
+# Скидки за число смен подряд у одной машины. Бот считает итог по ним сам, без модели.
+discounts:
+  - min_shifts: 5
+    percent: 5
+  - min_shifts: 10
+    percent: 10
+
 items:
   - id: jcb-3cx
     avito_item_id: 4012345601

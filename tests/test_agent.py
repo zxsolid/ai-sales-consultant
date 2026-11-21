@@ -93,3 +93,29 @@ async def test_chats_do_not_mix(catalog):
     await bot.answer("c1", "Почём кран?")
     await bot.answer("c2", "Почём каток?")
     assert len(llm.calls[1]) == 2  # system + новый вопрос, без истории первого чата
+
+
+async def test_bot_gets_ready_quote_instead_of_counting(catalog):
+    llm = answers("5 смен JCB со скидкой 5% выйдут 104 500 ₽.")
+    reply = await Consultant(catalog, llm).answer("c1", "Нужен JCB на 5 смен подряд, сколько выйдет?")
+    system = llm.calls[0][0]["content"]
+    assert "Расчёт для покупателя: Экскаватор-погрузчик JCB 3CX, смен подряд: 5" in system
+    assert "итого 104500 ₽" in system
+    assert reply.sources[0] == "quote"
+    assert reply.guard_failures == []
+
+
+async def test_quote_without_discount_uses_item_from_ad(catalog):
+    llm = answers("3 смены выйдут 54 000 ₽.")
+    await Consultant(catalog, llm).answer("c1", "Нужен на 3 дня", KUBOTA_AD)
+    assert (
+        "Мини-экскаватор Kubota U27, смен подряд: 3, цена смены 18000 ₽, скидки нет, итого 54000 ₽"
+        in (llm.calls[0][0]["content"])
+    )
+
+
+async def test_wrong_total_is_rewritten(catalog):
+    llm = answers("5 смен выйдут 110 000 ₽ с учётом скидки 5%.", "5 смен выйдут 104 500 ₽.")
+    reply = await Consultant(catalog, llm).answer("c1", "Нужен JCB на 5 смен подряд")
+    assert reply.text == "5 смен выйдут 104 500 ₽."
+    assert "110000" in reply.guard_failures[0]
