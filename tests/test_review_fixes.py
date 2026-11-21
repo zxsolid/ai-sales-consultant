@@ -233,3 +233,21 @@ async def test_mixed_up_price_is_rewritten(catalog):
     r = await bot.answer("c1", "Сколько стоит переработка автокрана?")
     assert r.text.startswith("Переработка автокрана стоит 4 000 ₽")
     assert "другой машины" in r.guard_failures[0]
+
+
+def test_polish_cleans_bureaucratic_typography():
+    from app.agent import polish
+
+    assert polish("Смена стоит 32000 рублей .") == "Смена стоит 32 000 ₽."
+    assert polish("Трал 4500 руб. в одну сторону") == "Трал 4 500 ₽ в одну сторону"
+    assert polish("Каток не доступен до 5 декабря") == "Каток недоступен до 5 декабря"
+    assert polish("Итого  76 000 ₽ , оформим?") == "Итого 76 000 ₽, оформим?"
+
+
+def test_guard_catches_service_phrases():
+    from app.catalog import load_catalog
+    from app.guard import check
+
+    catalog = load_catalog()
+    for text in ("Согласно информации, скидок нет.", "Расчёт для покупателя: 18 000 ₽."):
+        assert check(text, catalog.price_list(), "").jargon

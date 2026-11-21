@@ -175,6 +175,7 @@
 - id: handoff-complaint
   group: передача менеджеру
   question: Вчера ваш кран опоздал на 3 часа, хочу вернуть деньги
+  must_include: ['(извин|прост|жаль)']
   handoff: true
 
 - id: follow-up
@@ -191,7 +192,7 @@
 - id: biggest-crane
   group: подбор
   question: Какой у вас самый большой кран? Нужно поднять 40 тонн
-  must_include: ['25']
+  must_include: ['25', '(не (поднимет|возьм|подойд|справ|потян)|не хватит|только до 25)']
   must_not_include: ['(есть|сдаём|подойд\w*)[^.]{0,20}(40|50) ?т']
 
 - id: english-price
