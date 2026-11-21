@@ -54,11 +54,12 @@ async def test_model_marker_calls_manager(catalog):
     assert reply.text.endswith(HANDOFF_NOTE)
 
 
-async def test_ready_to_order_calls_manager(catalog):
-    llm = answers("Отлично, уточните адрес объекта.")
+async def test_ready_to_order_starts_lead(catalog):
+    llm = answers('{"works": null, "address": null, "date": "понедельник", "name": null}')
     reply = await Consultant(catalog, llm).answer("c1", "Беру JCB на понедельник")
-    assert reply.handoff_reason == "готов заказать"
-    assert reply.text == f"Отлично, уточните адрес объекта. {HANDOFF_NOTE}"
+    assert reply.lead_status == "collecting"
+    assert reply.handoff_reason is None  # менеджеру пишем, когда заявка готова
+    assert reply.text == "Оформлю заявку. Что нужно сделать на объекте?"
 
 
 async def test_ad_context_reaches_model(catalog):
@@ -133,10 +134,10 @@ async def test_marker_after_full_answer_is_ignored(catalog):
 
 
 async def test_handoff_note_is_not_repeated(catalog):
-    llm = answers("Ваш номер передан менеджеру, он свяжется с вами.")
-    reply = await Consultant(catalog, llm).answer("c1", "Мой номер +7 916 123-45-67")
-    assert reply.handoff_reason == "оставил телефон"
-    assert reply.text == "Ваш номер передан менеджеру, он свяжется с вами."
+    llm = answers("Передал ваш вопрос менеджеру, он напишет.")
+    reply = await Consultant(catalog, llm).answer("c1", "Дайте менеджера, пожалуйста")
+    assert reply.handoff_reason == "просит человека"
+    assert reply.text == "Передал ваш вопрос менеджеру, он напишет."
 
 
 async def test_reset_forgets_history(catalog):

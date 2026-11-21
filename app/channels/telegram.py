@@ -1,7 +1,7 @@
-"""Демо в Telegram: бот ведёт себя так же, как в чате Авито.
+"""Telegram: тот же консультант, что и в чатах Авито.
 
-Команда /ad показывает список объявлений, кнопка выбирает объявление —
-так бот знает, из какого объявления пришёл покупатель.
+Команда /ad показывает объявления. Клиент выбирает одно, и бот отвечает так,
+будто клиент написал из этого объявления на Авито.
 """
 
 from aiogram import F, Router
@@ -20,13 +20,15 @@ from app.notify import ManagerNotifier, handoff_message
 
 HELP = (
     "Что я умею:\n"
-    "• называю цены на технику и считаю сумму за несколько смен со скидкой;\n"
-    "• подсказываю, какая машина подойдёт под ваши работы;\n"
-    "• отвечаю про наличие, доставку, оплату, документы и отмену;\n"
-    "• передаю вас менеджеру, когда вы готовы заказать или нужен договор.\n\n"
-    "Цены и условия беру только из прайса компании. Если ответа там нет, не выдумываю, а зову менеджера.\n\n"
-    "Команды: /ad — выбрать объявление, из которого пишете (для демо), /reset — начать заново, /help — эта справка.\n"
-    "Или нажмите на пример вопроса внизу."
+    "• называю цены и считаю сумму за несколько смен со скидкой;\n"
+    "• подбираю технику под ваши работы;\n"
+    "• отвечаю про наличие, доставку, оплату и отмену;\n"
+    "• оформляю заявку: спрошу адрес, дату и телефон и передам менеджеру.\n\n"
+    "Цены беру только из прайса. Чего в прайсе нет, уточняю у менеджера. Понимаю русский и английский.\n\n"
+    "/ad написать как из объявления на Авито\n"
+    "/reset начать заново\n"
+    "/help эта справка\n\n"
+    "Или нажмите пример вопроса внизу."
 )
 
 EXAMPLES = ReplyKeyboardMarkup(
@@ -34,6 +36,7 @@ EXAMPLES = ReplyKeyboardMarkup(
         [KeyboardButton(text="Сколько стоит автокран?"), KeyboardButton(text="Нужен JCB на 5 смен, сколько выйдет?")],
         [KeyboardButton(text="Что взять для септика на узком участке?"), KeyboardButton(text="Бульдозер есть?")],
         [KeyboardButton(text="Можно без предоплаты?"), KeyboardButton(text="Беру JCB на понедельник")],
+        [KeyboardButton(text="How much is the crane for 2 days?")],
     ],
     resize_keyboard=True,
     input_field_placeholder="Вопрос про технику, цены или условия",
@@ -88,15 +91,13 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
         avito_id = current_ad.get(message.from_user.id)
         reply = await consultant.answer(str(message.chat.id), message.text, avito_id)
         await message.answer(reply.text)
-        if reply.handoff_reason:
+        if reply.lead is not None:
+            await notifier.notify(reply.lead.card(catalog, "Telegram", str(message.chat.id)))
+        elif reply.handoff_reason:
             item = catalog.by_avito_id(avito_id)
             await notifier.notify(
                 handoff_message(
-                    "Telegram",
-                    str(message.chat.id),
-                    reply.handoff_reason,
-                    message.text,
-                    item.name if item else None,
+                    "Telegram", str(message.chat.id), reply.handoff_reason, message.text, item.name if item else None
                 )
             )
 

@@ -2,6 +2,7 @@
 # must_include — каждое регулярное выражение должно найтись в ответе
 # must_not_include — ни одно не должно найтись
 # handoff — должен ли бот позвать менеджера (не указано — не проверяем)
+# lead — что с заявкой после ответа: collecting (бот собирает данные) или done (передал менеджеру)
 # ad — номер объявления на Авито, из которого пишет покупатель
 # history — что покупатель спросил раньше в этом же чате
 
@@ -130,16 +131,29 @@
   must_include: ['своим ходом']
   handoff: false
 
-- id: handoff-order
-  group: передача менеджеру
+- id: lead-order
+  group: заявка
   question: Беру JCB на понедельник, адрес Мытищи, улица Мира 5
-  handoff: true
-  must_not_include: ['забронировал', 'бронь подтвержд']
+  lead: collecting
+  must_include: ['\?']
+  must_not_include: ['забронировал', 'бронь подтвержд', 'адрес']
 
-- id: handoff-phone
-  group: передача менеджеру
+- id: lead-phone
+  group: заявка
   question: Мой номер +7 916 123-45-67, перезвоните
+  lead: collecting
+  must_include: ['техника']
+
+- id: lead-done
+  group: заявка
+  history:
+    - Беру JCB на 5 смен с понедельника, Мытищи, улица Мира 5
+    - Котлован под фундамент
+    - Олег
+  question: +7 916 123-45-67
+  lead: done
   handoff: true
+  must_include: ['передал заявку', '\+79161234567']
 
 - id: handoff-manager
   group: передача менеджеру
@@ -151,10 +165,10 @@
   question: А дешевле никак?
   handoff: true
 
-- id: handoff-contract
-  group: передача менеджеру
+- id: lead-contract
+  group: заявка
   question: Пришлите договор и счёт на автокран
-  handoff: true
+  lead: collecting
 
 - id: handoff-complaint
   group: передача менеджеру
@@ -177,3 +191,15 @@
   question: Какой у вас самый большой кран? Нужно поднять 40 тонн
   must_include: ['25']
   must_not_include: ['(есть|сдаём|подойд\w*)[^.]{0,20}(40|50) ?т']
+
+- id: english-price
+  group: английский
+  question: How much is the crane for 5 days?
+  must_include: ['152\s?000', '\b(the|is|for)\b']
+  handoff: false
+
+- id: english-delivery
+  group: английский
+  question: Do you deliver the backhoe loader? How much?
+  must_include: ['4\s?500', '\b(the|is|for)\b']
+  handoff: false

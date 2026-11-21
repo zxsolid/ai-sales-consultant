@@ -27,6 +27,7 @@ class CaseResult:
     answer: str
     handoff_reason: str | None
     guard_failures: list[str]
+    lead_status: str | None = None
     problems: list[str] = field(default_factory=list)
 
     @property
@@ -34,7 +35,7 @@ class CaseResult:
         return not self.problems
 
 
-def check_case(case: dict, answer: str, handoff_reason: str | None) -> list[str]:
+def check_case(case: dict, answer: str, handoff_reason: str | None, lead_status: str | None = None) -> list[str]:
     problems = []
     for pattern in case.get("must_include", []):
         if not re.search(pattern, answer, re.IGNORECASE):
@@ -44,6 +45,8 @@ def check_case(case: dict, answer: str, handoff_reason: str | None) -> list[str]
             problems.append(f"лишнее в ответе: {pattern}")
     if "handoff" in case and bool(handoff_reason) != case["handoff"]:
         problems.append("не позвал менеджера" if case["handoff"] else "зря позвал менеджера")
+    if "lead" in case and lead_status != case["lead"]:
+        problems.append(f"заявка: ждали {case['lead']}, а не {lead_status or 'нет заявки'}")
     return problems
 
 
@@ -56,8 +59,8 @@ async def run(llm: LLM, cases: list[dict]) -> list[CaseResult]:
         for previous in case.get("history", []):
             await bot.answer(chat, previous, case.get("ad"))
         reply = await bot.answer(chat, case["question"], case.get("ad"))
-        result = CaseResult(case, reply.text, reply.handoff_reason, reply.guard_failures)
-        result.problems = check_case(case, reply.text, reply.handoff_reason)
+        result = CaseResult(case, reply.text, reply.handoff_reason, reply.guard_failures, reply.lead_status)
+        result.problems = check_case(case, reply.text, reply.handoff_reason, reply.lead_status)
         results.append(result)
     return results
 
@@ -71,7 +74,7 @@ def render(results: list[CaseResult]) -> str:
         f"Прошло проверок: **{passed} из {len(results)}**. "
         f"Проверка цифр поймала выдумку и заставила переписать ответ: {caught} раз.",
         "",
-        "| # | Группа | Вопрос | Ответ бота | Менеджер | Итог |",
+        "| # | Группа | Вопрос | Ответ бота | Менеджер или заявка | Итог |",
         "|---|---|---|---|---|---|",
     ]
     for n, r in enumerate(results, 1):
@@ -79,8 +82,10 @@ def render(results: list[CaseResult]) -> str:
         verdict = "✅" if r.passed else "❌ " + "; ".join(r.problems)
         if r.guard_failures:
             verdict += f" (переписан: {'; '.join(r.guard_failures)})"
+        status = {"collecting": "собирает заявку", "done": "заявка у менеджера"}.get(r.lead_status or "")
         lines.append(
-            f"| {n} | {r.case['group']} | {r.case['question']} | {answer} | {r.handoff_reason or '—'} | {verdict} |"
+            f"| {n} | {r.case['group']} | {r.case['question']} | {answer} "
+            f"| {status or r.handoff_reason or '—'} | {verdict} |"
         )
     return "\n".join(lines) + "\n"
 

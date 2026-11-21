@@ -13,6 +13,7 @@ discounts:
 
 items:
   - id: jcb-3cx
+    aliases: [jcb, джисиби, погрузчик, экскаватор-погрузчик, трактор, backhoe]
     avito_item_id: 4012345601
     name: Экскаватор-погрузчик JCB 3CX
     price_per_shift: 22000
@@ -23,6 +24,7 @@ items:
     good_for: траншеи, котлованы под фундамент, планировка участка, погрузка грунта
 
   - id: kubota-u27
+    aliases: [kubota, кубота, мини-экскаватор, мини экскаватор, миник, mini excavator]
     avito_item_id: 4012345602
     name: Мини-экскаватор Kubota U27
     price_per_shift: 18000
@@ -33,6 +35,7 @@ items:
     good_for: работа во дворах и на узких участках, траншеи под коммуникации, септики
 
   - id: crane-25
+    aliases: [кран, автокран, ивановец, crane]
     avito_item_id: 4012345603
     name: Автокран Ивановец 25 т
     price_per_shift: 32000
@@ -43,6 +46,7 @@ items:
     good_for: монтаж плит и ферм, разгрузка и подъём материалов
 
   - id: kamaz-20
+    aliases: [камаз, самосвал, dump truck, truck]
     avito_item_id: 4012345604
     name: Самосвал КамАЗ 20 т
     price_per_shift: 16000
@@ -53,6 +57,7 @@ items:
     good_for: вывоз грунта и мусора, доставка песка и щебня
 
   - id: bomag-7
+    aliases: [каток, bomag, бомаг, roller]
     avito_item_id: 4012345605
     name: Каток Bomag 7 т
     price_per_shift: 19000

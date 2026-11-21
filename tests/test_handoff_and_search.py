@@ -16,6 +16,10 @@ from app.knowledge import Knowledge
         ("89161234567 звоните", "оставил телефон"),
         ("Дайте менеджера", "просит человека"),
         ("Перезвоните мне", "просит человека"),
+        ("I want to book the crane", "готов заказать"),
+        ("Send me the contract", "просит договор или счёт"),
+        ("Can I talk to a manager?", "просит человека"),
+        ("Can I cancel the order?", None),
         ("А дешевле никак?", "торгуется"),
         ("Кран опоздал, хочу вернуть деньги", "жалоба"),
     ],
@@ -47,6 +51,10 @@ def knowledge():
         ("работаете в Твери?", "policy:region"),
         ("без предоплаты можно?", "policy:payment"),
         ("какая скидка на 10 смен", "policy:discounts"),
+        ("How much is the crane?", "item:crane-25"),
+        ("Do you deliver the backhoe loader?", "policy:delivery"),
+        ("Can I cancel the order?", "policy:cancel"),
+        ("Any discount for 10 shifts?", "policy:discounts"),
     ],
 )
 def test_search_finds_right_document(knowledge, query, doc):

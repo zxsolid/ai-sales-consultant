@@ -70,13 +70,24 @@ async def test_item_is_taken_from_chat_when_event_has_none(mock_avito):
     assert "Автокран Ивановец 25 т" in llm.calls[0][0]["content"].split("ДАННЫЕ:")[1].splitlines()[1]
 
 
-async def test_hot_lead_goes_to_manager(mock_avito):
-    consultant, _ = make("Уточните адрес объекта.")
+async def test_manager_gets_lead_card_when_order_is_complete(mock_avito):
+    extracted = (
+        '{"works": "траншея под кабель", "address": "Мытищи, Мира 5", "date": "понедельник 9:00", "name": "Олег"}'
+    )
+    llm = ScriptedLLM(lambda messages: extracted)
+    consultant = Consultant(load_catalog(), llm)
     notes = Notes()
-    await handle_event(event("Беру на понедельник"), AvitoClient("id", "secret", ME), consultant, notes)
-    assert len(notes.sent) == 1
-    assert "Причина: готов заказать" in notes.sent[0]
-    assert "Пишет из объявления: Мини-экскаватор Kubota U27" in notes.sent[0]
+    avito = AvitoClient("id", "secret", ME)
+    first = await handle_event(event("Беру на понедельник к 9, Мытищи Мира 5"), avito, consultant, notes)
+    assert first == "Оформлю заявку. Оставьте телефон: менеджер позвонит и подтвердит заказ."
+    assert notes.sent == []
+    done = await handle_event(event("+7 916 123-45-67"), avito, consultant, notes)
+    assert done.startswith("Передал заявку менеджеру: Мини-экскаватор Kubota U27")
+    card = notes.sent[0]
+    assert card.startswith("🔥 Новая заявка (Авито)")
+    assert "Техника: Мини-экскаватор Kubota U27" in card
+    assert "Телефон: +79161234567" in card
+    assert "Имя: Олег" in card
 
 
 async def test_token_is_reused(mock_avito):

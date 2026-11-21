@@ -78,7 +78,9 @@ async def handle_event(
     item_id = value.get("item_id") or await avito.chat_item_id(chat_id)
     reply = await consultant.answer(f"avito:{chat_id}", text, item_id)
     await avito.send_message(chat_id, reply.text)
-    if reply.handoff_reason:
+    if reply.lead is not None:
+        await notifier.notify(reply.lead.card(consultant.catalog, "Авито", chat_id))
+    elif reply.handoff_reason:
         item = consultant.catalog.by_avito_id(item_id)
         await notifier.notify(
             handoff_message("Авито", chat_id, reply.handoff_reason, text, item.name if item else None)
