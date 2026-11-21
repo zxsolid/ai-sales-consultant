@@ -119,3 +119,14 @@ async def test_wrong_total_is_rewritten(catalog):
     reply = await Consultant(catalog, llm).answer("c1", "Нужен JCB на 5 смен подряд")
     assert reply.text == "5 смен выйдут 104 500 ₽."
     assert "110000" in reply.guard_failures[0]
+
+
+async def test_marker_after_full_answer_is_ignored(catalog):
+    # YandexGPT ставил маркер даже после полного ответа про отмену заказа
+    llm = answers(
+        f"Отменить бесплатно можно за 12 часов до подачи, позже 30% смены. Какая техника нужна? {MODEL_MARKER}"
+    )
+    reply = await Consultant(catalog, llm).answer("c1", "Если погода испортится, можно отменить?")
+    assert reply.handoff_reason is None
+    assert MODEL_MARKER not in reply.text
+    assert HANDOFF_NOTE not in reply.text
