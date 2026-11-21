@@ -29,7 +29,6 @@ async def main() -> None:
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Начать разговор"),
-            BotCommand(command="ad", description="Написать как из объявления на Авито"),
             BotCommand(command="reset", description="Начать диалог заново"),
             BotCommand(command="help", description="Что умеет бот"),
         ]
@@ -38,7 +37,7 @@ async def main() -> None:
     await bot.set_my_description(
         "Демо ИИ-консультанта по прайсу. Компания выдуманная: аренда спецтехники. Бот называет цены, "
         "считает сумму со скидкой, подбирает технику, оформляет заявку и передаёт её менеджеру. "
-        "Цены берёт только из прайса. Тот же бот работает в чатах Авито."
+        "Цены берёт только из прайса."
     )
     await bot.set_my_short_description("ИИ-консультант по прайсу: цены, расчёт, подбор техники, заявка менеджеру")
     dp = Dispatcher()
