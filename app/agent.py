@@ -368,7 +368,9 @@ class Consultant:
         if shifts and quoted:
             docs.insert(0, ("quote", self.catalog.quote(quoted, shifts)))
         docs.append(("price_list", self.catalog.price_list()))
-        # Где работаем, модель знает всегда: «Твери» и «Тверь» поиск по словам не связывает
+        # Часы работы и регион модель знает всегда: «выходные» и «ежедневно», «Твери» и «Тверь»
+        # поиск по словам не связывает
+        docs.append(("company", self.catalog.company_card()))
         region = next((p for p in self.catalog.policies if p.id == "region"), None)
         if region is not None:
             docs.append(("policy:region", f"{region.title}. {region.text}"))

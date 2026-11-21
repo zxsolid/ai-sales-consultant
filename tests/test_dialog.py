@@ -201,3 +201,10 @@ async def test_region_rule_is_always_in_context(catalog):
     llm = script(turn("question", "В Тверь не выезжаем."))
     await Consultant(catalog, llm).answer("c1", "Работаете в Твери?")
     assert "Тверь, Тула, Калуга" in llm.calls[0][0]["content"]
+
+
+async def test_working_hours_are_always_in_context(catalog):
+    llm = script(turn("question", "Работаем ежедневно с 8:00 до 20:00."))
+    r = await Consultant(catalog, llm).answer("c1", "Работаете в выходные?")
+    assert "ежедневно с 8:00 до 20:00, без выходных" in llm.calls[0][0]["content"]
+    assert r.guard_failures == []

@@ -139,12 +139,15 @@ class Catalog:
             + ". Другой техники нет. В цену смены входят оператор и топливо, смена 8 часов."
         )
 
+    def company_card(self) -> str:
+        c = self.company
+        return f"Компания {c['name']}. Регион: {c['region']}. Часы работы: {c['hours']}, в выходные и праздники тоже."
+
     def documents(self) -> list[tuple[str, str]]:
         """Все куски знаний: (id, текст). Поиск идёт по ним."""
         docs = [(f"item:{i.id}", i.card()) for i in self.items]
         docs += [(f"policy:{p.id}", f"{p.title}. {p.text}") for p in self.policies]
-        c = self.company
-        docs.append(("company", f"Компания {c['name']}. Регион: {c['region']}. Часы работы: {c['hours']}."))
+        docs.append(("company", self.company_card()))
         return docs
 
 
