@@ -4,6 +4,8 @@ from pathlib import Path
 
 import yaml
 
+TONS = re.compile(r"(\d+)\s*(?:т\b|тонн|tons?\b)", re.IGNORECASE)
+
 SHIFTS = re.compile(r"\b(\d{1,2})\s*(смен\w*|дн(?:я|ей)|день|сут\w*|shifts?|days?)", re.IGNORECASE)
 
 
@@ -124,6 +126,20 @@ class Catalog:
 
     def by_id(self, item_id: str) -> Item | None:
         return next((i for i in self.items if i.id == item_id), None)
+
+    def over_limit(self, text: str) -> str | None:
+        """Клиенту нужно больше тонн, чем берёт самая мощная машина: «поднять 40 тонн», а кран на 25 т."""
+        needed = [int(n) for n in TONS.findall(text)]
+        weights = [(int(m.group(1)), i) for i in self.items if (m := TONS.search(i.name))]
+        if not needed or not weights:
+            return None
+        top, item = max(weights, key=lambda w: w[0])
+        if max(needed) <= top:
+            return None
+        return (
+            f"Предел техники: клиенту нужно {max(needed)} т, а наша самая мощная машина ({item.name}) "
+            f"берёт до {top} т. Она не справится."
+        )
 
     def price_list(self) -> str:
         """Короткий прайс: бот всегда знает, что есть в парке, а чего нет."""

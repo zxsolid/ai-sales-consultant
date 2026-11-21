@@ -251,3 +251,13 @@ def test_guard_catches_service_phrases():
     catalog = load_catalog()
     for text in ("Согласно информации, скидок нет.", "Расчёт для покупателя: 18 000 ₽."):
         assert check(text, catalog.price_list(), "").jargon
+
+
+def test_context_warns_when_job_is_too_heavy():
+    from app.catalog import load_catalog
+
+    catalog = load_catalog()
+    assert "не справится" in catalog.over_limit("Какой у вас самый большой кран? Нужно поднять 40 тонн")
+    assert "Ивановец" in catalog.over_limit("нужно 40 т")
+    assert catalog.over_limit("Почём автокран на 25 тонн?") is None
+    assert catalog.over_limit("Камаз на 5 смен") is None
