@@ -93,7 +93,13 @@ async def test_unknown_answer_calls_manager(catalog):
     llm = script(turn("question", "Уточню у менеджера, есть ли скидки для школ.", need_manager=True))
     r = await Consultant(catalog, llm).answer("c1", "Есть скидки для школ?")
     assert r.handoff_reason == "бот не нашёл ответа в прайсе"
-    assert "Передал вопрос менеджеру" in r.text
+    assert r.text == "Уточню у менеджера, есть ли скидки для школ."  # без второй фразы про менеджера
+
+
+async def test_unknown_answer_without_manager_word_gets_note(catalog):
+    llm = script(turn("question", "Такого в прайсе нет.", need_manager=True))
+    r = await Consultant(catalog, llm).answer("c1", "Работаете ночью?")
+    assert r.text == "Такого в прайсе нет. Передал вопрос менеджеру, он напишет сюда в рабочее время."
 
 
 async def test_bargain_is_just_a_question(catalog):
