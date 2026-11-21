@@ -120,6 +120,7 @@ FIELD_NAMES = {
 }
 QUOTE_TOTAL = re.compile(r"смен подряд: (\d+),.*?итого (\d+) ₽")
 ASKS_PRICE = re.compile(r"сколько|почём|почем|скидк|стоит|выйдет|цен|итог|how much|cost|price|discount", re.IGNORECASE)
+QUESTION_WORD = re.compile(r"(как|что|где|когда|куда|откуда|сколько|почему|зачем|чем|кто|ли)", re.IGNORECASE)
 PERCENT = re.compile(r"\d+\s*%")
 ASKS_DISCOUNT = re.compile(r"скидк|дешевл|подешевле|торг|discount|cheaper", re.IGNORECASE)
 MENTIONS_MANAGER = re.compile(r"менеджер|manager", re.IGNORECASE)
@@ -168,7 +169,14 @@ def polish(text: str) -> str:
     """Типографика, которую модель забывает: «16000 ₽» → «16 000 ₽», « — » → «: »."""
     text = re.sub(r"(?<![\d\s])\s+—\s+", ": ", text)
     # Модель любит анкетное «Уточните, пожалуйста, ваше имя»: говорим проще
-    text = re.sub(r"\bУточните,? пожалуйста,?\s+", "Подскажите ", text)
+    # «Уточните, какие работы?» → «Подскажите, какие работы?», «Уточните ваше имя» → «Подскажите ваше имя»
+    text = re.sub(
+        r"\bУточните,?( пожалуйста,?)?\s+(?=(\w+))",
+        lambda m: "Подскажите, " if QUESTION_WORD.match(m.group(2)) else "Подскажите ",
+        text,
+    )
+    # «Скидка составляет 10%» → «Скидка: 10%»
+    text = re.sub(r"\s+(составляет|составит)\s+", ": ", text)
     text = re.sub(r"(\d)\s*(рублей|рубля|руб)(?![а-яё])\.?", r"\1 ₽", text)
     text = re.sub(r"\bне доступ(ен|на|но|ны)\b", r"недоступ\1", text)
     text = re.sub(r"(\d)₽", r"\1 ₽", text)
