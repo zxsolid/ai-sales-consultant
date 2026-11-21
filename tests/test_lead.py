@@ -151,3 +151,23 @@ async def test_yes_without_offer_is_a_normal_answer(catalog):
     await bot.answer("c1", "Почём кран?")
     r = await bot.answer("c1", "Да")
     assert r.lead_status is None
+
+
+@pytest.mark.parametrize(
+    ("answer", "starts"),
+    [
+        ("Да", True),
+        ("конечно", True),
+        ("Давайте", True),
+        ("Yes", True),
+        ("Я подумаю", False),
+        ("да нет, потом", False),
+        ("Да, а доставка сколько?", False),
+        ("Пока не надо", False),
+    ],
+)
+async def test_which_answers_to_offer_start_lead(catalog, answer, starts):
+    bot = Consultant(catalog, model({}, answer="Автокран свободен. Оформить заявку?"))
+    await bot.answer("c1", "Нужен автокран")
+    r = await bot.answer("c1", answer)
+    assert (r.lead_status == "collecting") is starts

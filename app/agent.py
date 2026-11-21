@@ -21,6 +21,9 @@ YES = re.compile(
     r"^\W*(да|ага|угу|давай\w*|хочу|конечно|оформля\w*|оформите|можно|ок|окей|yes|yeah|yep|sure|ok|okay)\b",
     re.IGNORECASE,
 )
+NOT_NOW = re.compile(
+    r"\b(нет|не надо|не нужно|подума\w*|позже|потом|не сейчас|пока не|отмен\w*|no|later|not now)\b", re.IGNORECASE
+)
 ALREADY_SAID = re.compile(r"переда(л|н|м)\w*[^.]{0,30}менеджер|pass\w*[^.]{0,30}manager", re.IGNORECASE)
 
 SYSTEM_PROMPT = """Ты консультант компании «{company}» в чате с клиентом. Компания сдаёт спецтехнику в аренду с оператором.
@@ -83,7 +86,9 @@ class Consultant:
 
     def _agreed_to_order(self, chat_id: str, text: str) -> bool:
         said = [m["content"] for m in self._history[chat_id] if m["role"] == "assistant"]
-        return bool(said and OFFER.search(said[-1]) and YES.search(text))
+        if not said or not OFFER.search(said[-1]) or "?" in text:
+            return False  # «да, а доставка сколько?» сначала ответим на вопрос
+        return bool(YES.search(text)) and not NOT_NOW.search(text)
 
     def _remember(self, chat_id: str, text: str, answer: str) -> None:
         history = self._history[chat_id]
