@@ -137,3 +137,12 @@ async def test_handoff_note_is_not_repeated(catalog):
     reply = await Consultant(catalog, llm).answer("c1", "Мой номер +7 916 123-45-67")
     assert reply.handoff_reason == "оставил телефон"
     assert reply.text == "Ваш номер передан менеджеру, он свяжется с вами."
+
+
+async def test_reset_forgets_history(catalog):
+    llm = answers("Ответ 1.", "Ответ 2.")
+    bot = Consultant(catalog, llm)
+    await bot.answer("c1", "Почём кран?")
+    bot.reset("c1")
+    await bot.answer("c1", "Почём каток?")
+    assert len(llm.calls[1]) == 2

@@ -58,6 +58,10 @@ class Consultant:
         self.retries = retries
         self._history: dict[str, deque[Message]] = defaultdict(lambda: deque(maxlen=history_size))
 
+    def reset(self, chat_id: str) -> None:
+        """Забыть историю чата."""
+        self._history.pop(chat_id, None)
+
     def build_context(
         self, text: str, item: Item | None, history: list[Message] | None = None
     ) -> tuple[str, list[str]]:

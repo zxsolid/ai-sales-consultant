@@ -65,7 +65,7 @@ cp .env.example .env    # вписать ключ модели и токен б�
 ```
 
 - В терминале: `python -m app.chat_cli` (или `python -m app.chat_cli 4012345602` — как будто пишут из объявления мини-экскаватора).
-- В Telegram: `python -m app.run_telegram`, в боте команда `/ad` выбирает объявление.
+- В Telegram: `python -m app.run_telegram`. Команды видны в меню бота: `/ad` выбирает объявление, `/reset` начинает диалог заново.
 - Авито: `uvicorn app.run_avito:app --port 8000`, вебхук `https://ваш-домен/avito/webhook?token=AVITO_WEBHOOK_SECRET`.
 
 Запросы к API Авито собраны по документации developers.avito.ru. На боевом аккаунте их нужно проверить с доступами заказчика.

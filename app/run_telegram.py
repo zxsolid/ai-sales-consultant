@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.types import BotCommand
 
 from app.agent import Consultant
 from app.catalog import load_catalog
@@ -21,6 +22,13 @@ async def main() -> None:
     consultant = Consultant(load_catalog(), s.make_llm())
     notifier = (
         TelegramNotifier(bot, s.manager_chat_id) if s.manager_chat_id else LogNotifier(logging.getLogger("manager"))
+    )
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Начать разговор"),
+            BotCommand(command="ad", description="Выбрать объявление, из которого пишете"),
+            BotCommand(command="reset", description="Начать диалог заново"),
+        ]
     )
     dp = Dispatcher()
     dp.include_router(build_router(consultant, notifier))

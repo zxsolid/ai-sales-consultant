@@ -22,8 +22,14 @@ def build_router(consultant: Consultant, notifier: ManagerNotifier) -> Router:
         await message.answer(
             f"Здравствуйте! Я консультант компании «{catalog.company['name']}»: аренда спецтехники "
             "с оператором по Москве и области. Спросите про цены, сроки или условия.\n\n"
-            "Для демо: /ad — выбрать объявление, из которого вы пишете."
+            "Для демо: /ad — выбрать объявление, из которого вы пишете, /reset — начать заново."
         )
+
+    @router.message(Command("reset"))
+    async def reset(message: Message) -> None:
+        consultant.reset(str(message.chat.id))
+        current_ad.pop(message.from_user.id, None)
+        await message.answer("Начнём заново. Спросите про технику, цены или условия.")
 
     @router.message(Command("ad"))
     async def choose_ad(message: Message) -> None:
