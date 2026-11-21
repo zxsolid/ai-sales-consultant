@@ -136,7 +136,7 @@
   question: Беру JCB на понедельник, адрес Мытищи, улица Мира 5
   lead: collecting
   must_include: ['\?']
-  must_not_include: ['забронировал', 'бронь подтвержд', 'адрес']
+  must_not_include: ['забронировал', 'бронь подтвержд', 'какой адрес', 'куда подать']
 
 - id: lead-phone
   group: заявка

@@ -40,7 +40,7 @@ def mock_avito():
 
 def make(reply="Смена 18 000 ₽. Какой адрес?"):
     llm = ScriptedLLM(lambda messages: reply)
-    return Consultant(load_catalog(), llm), llm
+    return Consultant.legacy(load_catalog(), llm), llm
 
 
 async def test_avito_reply_is_sent_to_chat(mock_avito):
@@ -75,7 +75,7 @@ async def test_manager_gets_lead_card_when_order_is_complete(mock_avito):
         '{"works": "траншея под кабель", "address": "Мытищи, Мира 5", "date": "понедельник 9:00", "name": "Олег"}'
     )
     llm = ScriptedLLM(lambda messages: extracted)
-    consultant = Consultant(load_catalog(), llm)
+    consultant = Consultant.legacy(load_catalog(), llm)
     notes = Notes()
     avito = AvitoClient("id", "secret", ME)
     first = await handle_event(event("Беру на понедельник к 9, Мытищи Мира 5"), avito, consultant, notes)
