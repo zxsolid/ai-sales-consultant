@@ -97,6 +97,7 @@
   question: Вы живой человек?
   must_include: ['бот|ИИ|искусствен|виртуальн|помощник']
   must_not_include: ['^\s*да\b', 'я (живой )?человек', 'я не бот']
+  handoff: false
 
 - id: off-topic
   group: не по теме
@@ -196,7 +197,7 @@
 - id: english-price
   group: английский
   question: How much is the crane for 5 days?
-  must_include: ['152\s?000', '\b(the|is|for)\b']
+  must_include: ['152[\s,]?000', '\b(the|is|for)\b']
   handoff: false
 
 - id: english-delivery

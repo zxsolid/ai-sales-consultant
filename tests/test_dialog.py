@@ -188,3 +188,9 @@ def test_polish_fixes_dashes_and_thousands():
 
     assert polish("Цена КамАЗа — 16000 ₽, итого 76000 ₽.") == "Цена КамАЗа: 16 000 ₽, итого 76 000 ₽."
     assert polish("глубина 2,7 м, вес 2700 кг") == "глубина 2,7 м, вес 2700 кг"
+
+
+async def test_phone_starts_order_even_if_model_says_manager(catalog):
+    llm = script(turn("manager", "Передам менеджеру. Какая техника нужна?"))
+    r = await Consultant(catalog, llm).answer("c1", "Мой номер +7 916 123-45-67, перезвоните")
+    assert r.lead_status == "collecting" and r.handoff_reason is None
