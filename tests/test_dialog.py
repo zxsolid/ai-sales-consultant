@@ -194,3 +194,9 @@ async def test_phone_starts_order_even_if_model_says_manager(catalog):
     llm = script(turn("manager", "Передам менеджеру. Какая техника нужна?"))
     r = await Consultant(catalog, llm).answer("c1", "Мой номер +7 916 123-45-67, перезвоните")
     assert r.lead_status == "collecting" and r.handoff_reason is None
+
+
+async def test_region_rule_is_always_in_context(catalog):
+    llm = script(turn("question", "В Тверь не выезжаем."))
+    await Consultant(catalog, llm).answer("c1", "Работаете в Твери?")
+    assert "Тверь, Тула, Калуга" in llm.calls[0][0]["content"]
