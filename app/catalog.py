@@ -141,7 +141,7 @@ class Catalog:
 
     def company_card(self) -> str:
         c = self.company
-        return f"Компания {c['name']}. Регион: {c['region']}. Часы работы: {c['hours']}, в выходные и праздники тоже."
+        return f"Компания {c['name']}. Регион: {c['region']}. Часы работы: {c['hours']}, без выходных."
 
     def documents(self) -> list[tuple[str, str]]:
         """Все куски знаний: (id, текст). Поиск идёт по ним."""
