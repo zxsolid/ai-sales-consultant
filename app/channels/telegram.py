@@ -36,7 +36,6 @@ EXAMPLES = ReplyKeyboardMarkup(
         [KeyboardButton(text="Сколько стоит автокран?"), KeyboardButton(text="Нужен JCB на 5 смен, сколько выйдет?")],
         [KeyboardButton(text="Что взять для септика на узком участке?"), KeyboardButton(text="Бульдозер есть?")],
         [KeyboardButton(text="Можно без предоплаты?"), KeyboardButton(text="Беру JCB на понедельник")],
-        [KeyboardButton(text="How much is the crane for 2 days?")],
     ],
     resize_keyboard=True,
     input_field_placeholder="Вопрос про технику, цены или условия",

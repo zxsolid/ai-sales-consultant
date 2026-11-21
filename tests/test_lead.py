@@ -131,3 +131,23 @@ async def test_lead_in_english(catalog):
     r = await bot.answer("c1", "+7 916 123-45-67")
     assert r.text.startswith("Your order is with the manager: Автокран Ивановец 25 т, Monday 9am, Khimki.")
     assert r.lead.shifts == 2
+
+
+async def test_yes_to_offer_starts_lead_with_what_client_said(catalog):
+    bot = Consultant(
+        catalog, model({"address": "Химки", "date": "01.12.2026"}, answer="Автокран свободен. Оформить заявку?")
+    )
+    await bot.answer("c1", "Нужен автокран, Химки")
+    await bot.answer("c1", "01.12.2026")
+    r = await bot.answer("c1", "Да")
+    assert r.lead_status == "collecting"
+    assert r.handoff_reason is None
+    assert r.text == "Оформлю заявку. Что нужно сделать на объекте?"
+    assert bot._leads["c1"].item.id == "crane-25"
+
+
+async def test_yes_without_offer_is_a_normal_answer(catalog):
+    bot = Consultant(catalog, model({}, answer="Смена 32 000 ₽. Какой адрес?"))
+    await bot.answer("c1", "Почём кран?")
+    r = await bot.answer("c1", "Да")
+    assert r.lead_status is None
