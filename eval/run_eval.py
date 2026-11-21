@@ -1,7 +1,8 @@
-"""Прогон бота по каверзным вопросам: python -m eval.run_eval
+"""Прогон бота по каверзным вопросам: python -m eval.run_eval [id,id,...]
 
 Берёт настоящую модель из .env, задаёт каждый вопрос в новом чате
-и пишет отчёт в eval/report.md.
+и пишет отчёт в eval/report.md. Если передать id через запятую,
+прогонит только эти вопросы (дешевле, когда чините пару ответов).
 """
 
 import asyncio
@@ -88,6 +89,9 @@ async def main() -> None:
     from app.config import Settings
 
     cases = yaml.safe_load(CASES.read_text(encoding="utf-8"))
+    if len(sys.argv) > 1:
+        only = set(sys.argv[1].split(","))
+        cases = [c for c in cases if c["id"] in only]
     results = await run(Settings().make_llm(), cases)
     REPORT.write_text(render(results), encoding="utf-8")
     passed = sum(r.passed for r in results)
