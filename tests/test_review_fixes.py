@@ -278,3 +278,17 @@ def test_discount_request_brings_discount_rules_not_a_random_truck():
     context, sources = c.build_context("Сделайте скидку 20%, я у вас уже заказывал", None)
     assert sources[0] == "policy:discounts"
     assert "item:kamaz-20" not in sources
+
+
+async def test_bot_adds_total_when_model_forgets_it():
+    import json
+
+    from app.agent import Consultant
+    from app.catalog import load_catalog
+    from app.llm import ScriptedLLM
+
+    turn = {"intent": "question", "order": {}, "need_manager": False, "reply": "Скидка 10%. Хотите оформить заявку?"}
+    c = Consultant(load_catalog(), ScriptedLLM(lambda m: json.dumps(turn, ensure_ascii=False)))
+    reply = await c.answer("c1", "Мини-экскаватор на 10 смен, какая будет скидка?")
+    assert "162 000 ₽" in reply.text
+    assert reply.text.endswith("Хотите оформить заявку?")

@@ -206,5 +206,5 @@
 - id: english-delivery
   group: английский
   question: Do you deliver the backhoe loader? How much?
-  must_include: ['4\s?500', '\b(the|is|for)\b']
+  must_include: ['4[\s,]?500', '\b(the|is|for)\b']
   handoff: false

@@ -9,7 +9,7 @@ from dataclasses import fields as dataclass_fields
 
 from app import guard, handoff
 from app import lead as leads
-from app.catalog import Catalog, Item, parse_shifts
+from app.catalog import Catalog, Item, money, parse_shifts
 from app.knowledge import Knowledge
 from app.llm import LLM, Message
 from app.storage import ChatStore
@@ -118,6 +118,8 @@ FIELD_NAMES = {
     "name": "имя",
     "phone": "телефон",
 }
+QUOTE_TOTAL = re.compile(r"смен подряд: (\d+),.*?итого (\d+) ₽")
+ASKS_PRICE = re.compile(r"сколько|почём|почем|скидк|стоит|выйдет|цен|итог|how much|cost|price|discount", re.IGNORECASE)
 PERCENT = re.compile(r"\d+\s*%")
 ASKS_DISCOUNT = re.compile(r"скидк|дешевл|подешевле|торг|discount|cheaper", re.IGNORECASE)
 MENTIONS_MANAGER = re.compile(r"менеджер|manager", re.IGNORECASE)
@@ -570,6 +572,22 @@ class Consultant:
         # Телефон берём только из слов клиента: модель не должна его «додумать»
         lead.phone = lead.phone or leads.normalize_phone(text)
 
+    @staticmethod
+    def _with_total(reply: str, context: str, text: str) -> str:
+        """Клиент спросил про цену или скидку на N смен, а модель не назвала итог: добавляем его сами."""
+        m = QUOTE_TOTAL.search(context)
+        if not m or not ASKS_PRICE.search(text):
+            return reply
+        shifts, total = int(m.group(1)), int(m.group(2))
+        if str(total) in re.sub(r"[\s,.]", "", reply):
+            return reply
+        note = (
+            f"Total for {shifts} shifts: {money(total)} ₽."
+            if lang_of(text) == "en"
+            else (f"Итого за {shifts} смен: {money(total)} ₽.")
+        )
+        return with_note(reply, note)
+
     async def _dialog(self, chat_id: str, text: str, avito_item_id: int | None) -> Reply | None:
         ad_item = self.catalog.by_avito_id(avito_item_id)
         lead = self._leads.get(chat_id)
@@ -619,6 +637,8 @@ class Consultant:
         if failed:
             data = {"intent": "other", "order": {}, "need_manager": True}
             reply = t["fallback"]
+        else:
+            reply = self._with_total(reply, context, text)
         intent = data["intent"]
         # Модель ставит need_manager и после полного ответа. Верим, только если она пишет «уточню у менеджера»
         unsure = not failed and data.get("need_manager") is True and bool(UNSURE.search(reply))
